@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { User, Course, ForumPost, Job, Appointment } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { api } from '../services/api';
+import { api, apiFetchCourses, apiEnrollCourse, apiFetchForumPosts, apiCreateForumPost, apiFetchJobs, apiApplyForJob } from '../services/api';
 import moment from 'moment';
 
 type Tab = 'profile' | 'courses' | 'forum' | 'jobs' | 'appointments';
@@ -18,17 +18,21 @@ const ProgressBar: React.FC<{ value: number; max: number }> = ({ value, max }) =
 
 const ProfileView: React.FC = () => {
     const { user } = useAuth();
-    const [profile, setProfile] = useState<User | null>(user);
+    // Dados de exemplo para demonstração
+    const [profile, setProfile] = useState<User>({
+        id: 3,
+        nome: user?.nome || "Maria da Silva Santos",
+        cpf: user?.cpf || "55566677788",
+        cargo: "beneficiario",
+        pontos: 150,
+        nivel: 2,
+        pontosProximoNivel: 100,
+        enrolledCourses: [1, 3],
+        appliedJobs: [1, 2]
+    });
 
-    useEffect(() => {
-        if(user?.token && !profile?.pontos) { // Re-fetch if profile seems incomplete
-            apiFetchProfile(user.token).then(setProfile);
-        }
-    }, [user, profile]);
-
-    if (!profile) return <div className="text-center p-10">Carregando perfil...</div>;
-
-    const achievements = [
+    // Dados de exemplo de conquistas
+    const levelAchievements = [
         { level: 1, name: 'Medalha de Boas-vindas', icon: '👋', description: 'Juntou-se à comunidade.'},
         { level: 2, name: 'Medalha de Iniciante', icon: '🌟', description: 'Alcançou o nível 2.' },
         { level: 5, name: 'Medalha de Aprendiz', icon: '🎓', description: 'Alcançou o nível 5.' },
@@ -53,7 +57,7 @@ const ProfileView: React.FC = () => {
             <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg animate-slide-in" style={{animationDelay: '100ms'}}>
                  <h4 className="text-xl font-bold text-gray-700 mb-4">Suas Conquistas</h4>
                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {achievements.map(ach => (
+                    {levelAchievements.map(ach => (
                         <div key={ach.level} className={`p-4 rounded-lg text-center border-2 transition-all ${profile.nivel >= ach.level ? 'border-brand-secondary-400 bg-yellow-50' : 'bg-gray-100 border-gray-200 opacity-60'}`}>
                             <span className="text-4xl">{ach.icon}</span>
                             <p className="font-semibold mt-2">{ach.name}</p>
@@ -222,28 +226,28 @@ const JobsView: React.FC = () => {
 
 const AppointmentsView: React.FC = () => {
   const { user } = useAuth();
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      if (user) {
-        try {
-          const response = await api.get('/appointments', { params: { beneficiary_id: user.id } });
-          setAppointments(response.data.data);
-        } catch (error) {
-          console.error("Failed to fetch appointments", error);
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-    fetchAppointments();
-  }, [user]);
-
-  if (loading) {
-    return <p className="text-center p-4">Carregando seus agendamentos...</p>;
-  }
+  // Dados de exemplo para demonstração
+  const [appointments, setAppointments] = useState<Appointment[]>([
+    { 
+      id: 1, 
+      title: 'Atualização CadÚnico', 
+      description: 'Atualização de dados cadastrais no CadÚnico', 
+      priority: 'Alta', 
+      status: 'Pendente', 
+      beneficiary_id: 3, 
+      createdAt: '2024-01-20'
+    },
+    { 
+      id: 2, 
+      title: 'Consulta Social', 
+      description: 'Avaliação socioeconômica familiar', 
+      priority: 'Média', 
+      status: 'Realizado', 
+      beneficiary_id: 3, 
+      createdAt: '2024-01-15'
+    }
+  ]);
+  const [loading, setLoading] = useState(false);
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
@@ -253,13 +257,15 @@ const AppointmentsView: React.FC = () => {
           {appointments.map(app => (
             <li key={app.id} className="p-4 border rounded-lg flex justify-between items-center">
               <div>
-                <p className="font-bold">{app.reason}</p>
-                <p className="text-sm text-gray-600">
-                  {moment(app.date).format('dddd, DD [de] MMMM [de] YYYY')} às {app.time}
+                <p className="font-bold">{app.title}</p>
+                <p className="text-sm text-gray-600">{app.description}</p>
+                <p className="text-xs text-gray-500">
+                  {moment(app.createdAt).format('DD/MM/YYYY')} - Prioridade: {app.priority}
                 </p>
               </div>
               <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
-                app.status === 'Agendado' ? 'bg-blue-100 text-blue-800' :
+                app.status === 'Pendente' ? 'bg-yellow-100 text-yellow-800' :
+                app.status === 'Em Andamento' ? 'bg-blue-100 text-blue-800' :
                 app.status === 'Realizado' ? 'bg-green-100 text-green-800' :
                 'bg-red-100 text-red-800'
               }`}>

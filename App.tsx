@@ -23,54 +23,55 @@ const AppRoutes: React.FC = () => {
   return (
     <Routes>
       {!user ? (
+        // Usuário não logado - mostrar apenas rotas públicas
         <>
           <Route path="/" element={<HomePage />} />
+          <Route path="/home" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/news" element={<NewsPage />} />
-          <Route path="/news/:id" element={<SingleNewsPage />} />
-          <Route path="/*" element={<Navigate to="/" />} />
+          <Route path="/news" element={<Layout><NewsPage /></Layout>} />
+          <Route path="/news/:id" element={<Layout><SingleNewsPage /></Layout>} />
+          <Route path="*" element={<Navigate to="/login" />} />
         </>
       ) : (
-        <Route
-          path="/*"
-          element={
-            <Layout>
-              <Routes>
-                {user.cargo === 'servidor' && (
-                  <>
-                    <Route path="/dashboard" element={<ServerDashboardPage />} />
-                    <Route path="/admin/beneficiaries" element={<BeneficiaryListPage />} />
-                    <Route path="/admin/beneficiaries/:id" element={<BeneficiaryProfilePage />} />
-                    <Route path="/schedule" element={<SchedulePage />} />
-                    <Route path="/" element={<Navigate to="/dashboard" />} />
-                  </>
-                )}
-                {user.cargo === 'beneficiario' && (
-                  <>
-                    <Route path="/portal" element={<BeneficiaryPortalPage />} />
-                    <Route path="/" element={<Navigate to="/portal" />} />
-                  </>
-                )}
-                {user.cargo === 'secretario' && (
-                  <>
-                    <Route path="/secretary" element={<SecretaryDashboardPage />} />
-                    <Route path="/admin/beneficiaries" element={<BeneficiaryListPage />} />
-                    <Route path="/admin/beneficiaries/:id" element={<BeneficiaryProfilePage />} />
-                    <Route path="/admin/programs" element={<ProgramManagementPage />} />
-                    <Route path="/admin/reports" element={<ReportsPage />} />
-                    <Route path="/news" element={<NewsPage />} />
-                    <Route path="/news/:id" element={<SingleNewsPage />} />
-                    <Route path="/schedule" element={<SchedulePage />} />
-                    <Route path="/" element={<Navigate to="/secretary" />} />
-                  </>
-                )}
-                <Route path="/home" element={<HomePage />} />
-                <Route path="*" element={<Navigate to="/" />} />
-              </Routes>
-            </Layout>
-          }
-        />
+        // Usuário logado - rotas baseadas no cargo
+        <>
+          {user.cargo === 'secretario' && (
+            <>
+              <Route path="/" element={<Navigate to="/secretary" />} />
+              <Route path="/secretary" element={<Layout><SecretaryDashboardPage /></Layout>} />
+              <Route path="/admin/beneficiaries" element={<Layout><BeneficiaryListPage /></Layout>} />
+              <Route path="/admin/beneficiaries/:id" element={<Layout><BeneficiaryProfilePage /></Layout>} />
+              <Route path="/admin/programs" element={<Layout><ProgramManagementPage /></Layout>} />
+              <Route path="/admin/reports" element={<Layout><ReportsPage /></Layout>} />
+              <Route path="/schedule" element={<Layout><SchedulePage /></Layout>} />
+            </>
+          )}
+          
+          {user.cargo === 'servidor' && (
+            <>
+              <Route path="/" element={<Navigate to="/dashboard" />} />
+              <Route path="/dashboard" element={<Layout><ServerDashboardPage /></Layout>} />
+              <Route path="/admin/beneficiaries" element={<Layout><BeneficiaryListPage /></Layout>} />
+              <Route path="/admin/beneficiaries/:id" element={<Layout><BeneficiaryProfilePage /></Layout>} />
+              <Route path="/schedule" element={<Layout><SchedulePage /></Layout>} />
+            </>
+          )}
+          
+          {user.cargo === 'beneficiario' && (
+            <>
+              <Route path="/" element={<Navigate to="/portal" />} />
+              <Route path="/portal" element={<Layout><BeneficiaryPortalPage /></Layout>} />
+            </>
+          )}
+          
+          {/* Rotas comuns para todos os usuários logados */}
+          <Route path="/home" element={<Layout><HomePage /></Layout>} />
+          <Route path="/news" element={<Layout><NewsPage /></Layout>} />
+          <Route path="/news/:id" element={<Layout><SingleNewsPage /></Layout>} />
+          <Route path="/login" element={<Navigate to="/" />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </>
       )}
     </Routes>
   );

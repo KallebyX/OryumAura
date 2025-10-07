@@ -12,33 +12,66 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // Iniciar sem usuário logado para permitir login
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      apiFetchProfile(token)
-        .then(profile => setUser({ ...profile, token }))
-        .catch(() => {
-          localStorage.removeItem('token');
-          setUser(null);
-        })
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
-  }, []);
+  const [loading, setLoading] = useState(false);
 
   const login = async (cpf: string, senha: string) => {
-    const { access_token } = await apiLogin(cpf, senha);
-    localStorage.setItem('token', access_token);
-    const profile = await apiFetchProfile(access_token);
-    setUser({ ...profile, token: access_token });
+    // Login simples baseado no CPF - sem validação de senha complexa
+    let demoUser: User | null = null;
+    
+    if (cpf === "99988877766") {
+      // Secretária
+      demoUser = {
+        id: 1,
+        nome: "Secretária Exemplo",
+        cpf: cpf,
+        cargo: "secretario",
+        pontos: 100,
+        nivel: 1,
+        pontosProximoNivel: 50,
+        token: "demo-token-secretaria",
+        enrolledCourses: [],
+        appliedJobs: []
+      };
+    } else if (cpf === "11122233344") {
+      // Servidor
+      demoUser = {
+        id: 2,
+        nome: "Servidor Exemplo",
+        cpf: cpf,
+        cargo: "servidor",
+        pontos: 75,
+        nivel: 1,
+        pontosProximoNivel: 25,
+        token: "demo-token-servidor",
+        enrolledCourses: [],
+        appliedJobs: []
+      };
+    } else if (cpf === "55566677788") {
+      // Beneficiário
+      demoUser = {
+        id: 3,
+        nome: "Beneficiário Exemplo",
+        cpf: cpf,
+        cargo: "beneficiario",
+        pontos: 50,
+        nivel: 1,
+        pontosProximoNivel: 50,
+        token: "demo-token-beneficiario",
+        enrolledCourses: [1],
+        appliedJobs: [1]
+      };
+    }
+    
+    if (demoUser) {
+      setUser(demoUser);
+    } else {
+      throw new Error('CPF não encontrado');
+    }
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
     setUser(null);
   };
 
