@@ -16,6 +16,10 @@ import NewsPage from './pages/news/NewsPage';
 import SingleNewsPage from './pages/news/SingleNewsPage';
 import SchedulePage from './pages/schedule/SchedulePage';
 import ReportsPage from './pages/admin/ReportsPage';
+import CRASManagementPage from './pages/cras/CRASManagementPage';
+import CREASManagementPage from './pages/creas/CREASManagementPage';
+import BenefitsManagementPage from './pages/benefits/BenefitsManagementPage';
+import IADashboardPage from './pages/ia/IADashboardPage';
 
 const AppRoutes: React.FC = () => {
   const { user } = useAuth();
@@ -45,6 +49,10 @@ const AppRoutes: React.FC = () => {
               <Route path="/admin/programs" element={<Layout><ProgramManagementPage /></Layout>} />
               <Route path="/admin/reports" element={<Layout><ReportsPage /></Layout>} />
               <Route path="/schedule" element={<Layout><SchedulePage /></Layout>} />
+              <Route path="/cras" element={<Layout><CRASManagementPage /></Layout>} />
+              <Route path="/creas" element={<Layout><CREASManagementPage /></Layout>} />
+              <Route path="/benefits" element={<Layout><BenefitsManagementPage /></Layout>} />
+              <Route path="/ia" element={<Layout><IADashboardPage /></Layout>} />
             </>
           )}
           
@@ -55,6 +63,10 @@ const AppRoutes: React.FC = () => {
               <Route path="/admin/beneficiaries" element={<Layout><BeneficiaryListPage /></Layout>} />
               <Route path="/admin/beneficiaries/:id" element={<Layout><BeneficiaryProfilePage /></Layout>} />
               <Route path="/schedule" element={<Layout><SchedulePage /></Layout>} />
+              <Route path="/cras" element={<Layout><CRASManagementPage /></Layout>} />
+              <Route path="/creas" element={<Layout><CREASManagementPage /></Layout>} />
+              <Route path="/benefits" element={<Layout><BenefitsManagementPage /></Layout>} />
+              <Route path="/ia" element={<Layout><IADashboardPage /></Layout>} />
             </>
           )}
           
