@@ -2,6 +2,7 @@ import React, { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { ToastContainer } from './Toast';
 import { CacapavaDoSulIcon } from './CacapavaDoSulIcon';
+import Chatbot from './Chatbot';
 
 
 const Header: React.FC = () => {
@@ -74,6 +75,7 @@ const Layout: React.FC<{ children: ReactNode }> = ({ children }) => {
             </main>
             <ToastContainer />
             <VLibras />
+            <Chatbot />
         </div>
     );
 };
