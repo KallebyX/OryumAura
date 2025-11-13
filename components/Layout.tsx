@@ -89,7 +89,10 @@ const VLibras: React.FC = () => {
     document.body.appendChild(script);
 
     return () => {
-      document.body.removeChild(script);
+      // Verifica se o script existe antes de remover
+      if (script && document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
     }
   }, []);
 

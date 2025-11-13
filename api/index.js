@@ -3,20 +3,86 @@ import cors from 'cors';
 import sqlite3 from 'sqlite3';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import dotenv from 'dotenv';
+import rateLimit from 'express-rate-limit';
+import { body, validationResult } from 'express-validator';
+import winston from 'winston';
+
+// Carrega variáveis de ambiente
+dotenv.config();
 
 const app = express();
-const port = 3001;
-const JWT_SECRET = 'seu-segredo-super-secreto-aqui'; // Troque por uma variável de ambiente em produção
+const port = process.env.PORT || 3001;
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-change-this';
+const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '8h';
+const DB_PATH = process.env.DB_PATH || './database.db';
+const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173';
 
-app.use(cors());
-app.use(express.json());
+// Configuração do Winston Logger
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'logs/combined.log' }),
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple()
+      )
+    })
+  ]
+});
+
+// Configuração de CORS restritiva
+app.use(cors({
+  origin: CORS_ORIGIN,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+app.use(express.json({ limit: '10mb' }));
+
+// Rate Limiting - Proteção contra ataques de força bruta
+const limiter = rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutos
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+  message: { error: 'Muitas requisições. Por favor, tente novamente mais tarde.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Rate limiting mais restritivo para autenticação
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5, // 5 tentativas
+  message: { error: 'Muitas tentativas de login. Por favor, aguarde 15 minutos.' },
+  skipSuccessfulRequests: true
+});
+
+app.use('/api/', limiter);
+
+// Middleware de logging de requisições
+app.use((req, res, next) => {
+  logger.info(`${req.method} ${req.path}`, {
+    ip: req.ip,
+    userAgent: req.get('user-agent')
+  });
+  next();
+});
 
 // Conecta ao banco de dados SQLite (cria o arquivo se não existir)
-const db = new sqlite3.Database('/tmp/database.db', (err) => {
+const db = new sqlite3.Database(DB_PATH, (err) => {
   if (err) {
-    console.error(err.message);
+    logger.error('Erro ao conectar ao banco de dados:', err);
+    process.exit(1);
   }
-  console.log('Conectado ao banco de dados SQLite.');
+  logger.info(`Conectado ao banco de dados SQLite em: ${DB_PATH}`);
 });
 
 // Middleware de auditoria LGPD
@@ -33,9 +99,31 @@ const auditLog = (req, action, resource, resourceId, details = null) => {
     req.get('user-agent')
   ];
   db.run(sql, params, (err) => {
-    if (err) console.error('Erro ao registrar log de auditoria:', err.message);
+    if (err) logger.error('Erro ao registrar log de auditoria:', err);
   });
 };
+
+// Helper para validação de requests
+const validateRequest = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ error: 'Dados inválidos', details: errors.array() });
+  }
+  next();
+};
+
+// Validadores comuns
+const passwordValidator = body('senha')
+  .isLength({ min: 8 })
+  .withMessage('Senha deve ter no mínimo 8 caracteres')
+  .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+  .withMessage('Senha deve conter letras maiúsculas, minúsculas e números');
+
+const cpfValidator = body('cpf')
+  .isLength({ min: 11, max: 11 })
+  .withMessage('CPF deve ter 11 dígitos')
+  .isNumeric()
+  .withMessage('CPF deve conter apenas números');
 
 // Serializa a criação do banco de dados para garantir a ordem de execução
 db.serialize(() => {
@@ -513,23 +601,35 @@ const authenticateToken = (req, res, next) => {
 
 // === ROTAS DE AUTENTICAÇÃO ===
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', authLimiter, [
+  body('cpf').notEmpty().withMessage('CPF é obrigatório').isLength({ min: 11, max: 11 }).withMessage('CPF inválido'),
+  body('senha').notEmpty().withMessage('Senha é obrigatória')
+], validateRequest, (req, res) => {
   const { cpf, senha } = req.body;
-  if (!cpf || !senha) {
-    return res.status(400).json({ "error": "CPF e senha são obrigatórios." });
-  }
 
   const sql = "SELECT * FROM users WHERE cpf = ?";
   db.get(sql, [cpf], (err, user) => {
-    if (err) { return res.status(500).json({ "error": err.message }); }
-    if (!user) { return res.status(401).json({ "error": "Credenciais inválidas." }); }
-
-    const isPasswordCorrect = bcrypt.compareSync(senha, user.password_hash);
-    if (!isPasswordCorrect) {
+    if (err) {
+      logger.error('Erro no login:', err);
+      return res.status(500).json({ "error": "Erro ao processar requisição." });
+    }
+    if (!user) {
       return res.status(401).json({ "error": "Credenciais inválidas." });
     }
 
-    const access_token = jwt.sign({ id: user.id, cpf: user.cpf, role: user.role, name: user.name }, JWT_SECRET, { expiresIn: '8h' });
+    const isPasswordCorrect = bcrypt.compareSync(senha, user.password_hash);
+    if (!isPasswordCorrect) {
+      logger.warn(`Tentativa de login falha para CPF: ${cpf}`);
+      return res.status(401).json({ "error": "Credenciais inválidas." });
+    }
+
+    const access_token = jwt.sign(
+      { id: user.id, cpf: user.cpf, role: user.role, name: user.name },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRATION }
+    );
+
+    logger.info(`Login bem-sucedido para usuário: ${user.name} (${user.cpf})`);
     res.json({ access_token });
   });
 });
@@ -1680,14 +1780,23 @@ app.post('/api/chatbot/message', (req, res) => {
     // Salva resposta do bot
     const sql2 = `INSERT INTO chatbot_messages (user_id, session_id, message, sender, intent, confidence) VALUES (?, ?, ?, 'bot', ?, ?)`;
     db.run(sql2, [user_id || null, session_id, botResponse, intent, confidence], function(err) {
-      if (err) { return res.status(400).json({ "error": err.message }); }
+      if (err) {
+        logger.error('Erro ao salvar mensagem do chatbot:', err);
+        return res.status(500).json({ "error": "Erro ao processar mensagem." });
+      }
 
+      // Retorna estrutura compatível com o frontend
       res.json({
-        "message": "success",
         "data": {
-          response: botResponse,
-          intent,
-          confidence
+          "message": {
+            id: this.lastID,
+            session_id: session_id,
+            sender: 'bot',
+            message: botResponse,
+            timestamp: new Date().toISOString(),
+            intent,
+            confidence
+          }
         }
       });
     });
@@ -1835,11 +1944,51 @@ app.get('/api/audit-logs', authenticateToken, (req, res) => {
 });
 
 
+// === HEALTH CHECK ===
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    database: 'connected'
+  });
+});
+
+// === MIDDLEWARE DE TRATAMENTO DE ERROS (deve vir no final) ===
+// Handler para rotas não encontradas
+app.use((req, res, next) => {
+  res.status(404).json({
+    error: 'Endpoint não encontrado',
+    path: req.path
+  });
+});
+
+// Handler centralizado de erros
+app.use((err, req, res, next) => {
+  logger.error('Erro não tratado:', {
+    error: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method,
+    ip: req.ip
+  });
+
+  // Não expõe detalhes do erro em produção
+  const isProduction = process.env.NODE_ENV === 'production';
+  res.status(err.status || 500).json({
+    error: isProduction ? 'Erro interno do servidor' : err.message,
+    ...(isProduction ? {} : { stack: err.stack })
+  });
+});
+
 // Inicia o servidor
 app.listen(port, () => {
-  console.log(`🚀 Oryum Aura API rodando em http://localhost:${port}`);
-  console.log(`📊 Total de endpoints implementados: 60+`);
-  console.log(`🔐 Autenticação JWT ativada`);
-  console.log(`📝 Sistema de auditoria LGPD ativo`);
-  console.log(`🤖 IA de predição e chatbot implementados`);
+  logger.info(`🚀 Oryum Aura API rodando em http://localhost:${port}`);
+  logger.info(`📊 Total de endpoints implementados: 60+`);
+  logger.info(`🔐 Autenticação JWT ativada`);
+  logger.info(`📝 Sistema de auditoria LGPD ativo`);
+  logger.info(`🤖 IA de predição e chatbot implementados`);
+  logger.info(`🔒 Rate limiting e CORS configurados`);
+  logger.info(`📋 Logging com Winston ativado`);
 });

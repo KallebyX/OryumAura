@@ -12,66 +12,85 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Iniciar sem usuário logado para permitir login
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Verificar se há token salvo ao carregar a aplicação
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const profile = await apiFetchProfile();
+
+          // Mapeia os campos do backend para o tipo User do frontend
+          const mappedUser: User = {
+            id: profile.id,
+            nome: profile.name,
+            cpf: profile.cpf,
+            cargo: profile.role === 'secretaria' ? 'secretario' : profile.role,
+            pontos: 0,
+            nivel: 1,
+            pontosProximoNivel: 100,
+            token: token,
+            enrolledCourses: [],
+            appliedJobs: []
+          };
+
+          setUser(mappedUser);
+        } catch (error) {
+          console.error('Erro ao buscar perfil:', error);
+          localStorage.removeItem('token');
+        }
+      }
+      setLoading(false);
+    };
+
+    checkAuth();
+  }, []);
 
   const login = async (cpf: string, senha: string) => {
-    // Login simples baseado no CPF - sem validação de senha complexa
-    let demoUser: User | null = null;
-    
-    if (cpf === "99988877766") {
-      // Secretária
-      demoUser = {
-        id: 1,
-        nome: "Secretária Exemplo",
-        cpf: cpf,
-        cargo: "secretario",
-        pontos: 100,
+    try {
+      setLoading(true);
+
+      // Faz login no backend
+      const response = await apiLogin(cpf, senha);
+
+      if (!response.access_token) {
+        throw new Error('Token não recebido do servidor');
+      }
+
+      // Salva o token no localStorage
+      localStorage.setItem('token', response.access_token);
+
+      // Busca o perfil do usuário
+      const profile = await apiFetchProfile();
+
+      // Mapeia os campos do backend para o tipo User do frontend
+      const mappedUser: User = {
+        id: profile.id,
+        nome: profile.name,
+        cpf: profile.cpf,
+        cargo: profile.role === 'secretaria' ? 'secretario' : profile.role,
+        pontos: 0,
         nivel: 1,
-        pontosProximoNivel: 50,
-        token: "demo-token-secretaria",
+        pontosProximoNivel: 100,
+        token: response.access_token,
         enrolledCourses: [],
         appliedJobs: []
       };
-    } else if (cpf === "11122233344") {
-      // Servidor
-      demoUser = {
-        id: 2,
-        nome: "Servidor Exemplo",
-        cpf: cpf,
-        cargo: "servidor",
-        pontos: 75,
-        nivel: 1,
-        pontosProximoNivel: 25,
-        token: "demo-token-servidor",
-        enrolledCourses: [],
-        appliedJobs: []
-      };
-    } else if (cpf === "55566677788") {
-      // Beneficiário
-      demoUser = {
-        id: 3,
-        nome: "Beneficiário Exemplo",
-        cpf: cpf,
-        cargo: "beneficiario",
-        pontos: 50,
-        nivel: 1,
-        pontosProximoNivel: 50,
-        token: "demo-token-beneficiario",
-        enrolledCourses: [1],
-        appliedJobs: [1]
-      };
-    }
-    
-    if (demoUser) {
-      setUser(demoUser);
-    } else {
-      throw new Error('CPF não encontrado');
+
+      setUser(mappedUser);
+    } catch (error: any) {
+      console.error('Erro no login:', error);
+      throw new Error(error.message || 'Erro ao fazer login');
+    } finally {
+      setLoading(false);
     }
   };
 
   const logout = () => {
+    localStorage.removeItem('token');
     setUser(null);
   };
 
