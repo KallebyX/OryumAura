@@ -20,6 +20,8 @@ import CRASManagementPage from './pages/cras/CRASManagementPage';
 import CREASManagementPage from './pages/creas/CREASManagementPage';
 import BenefitsManagementPage from './pages/benefits/BenefitsManagementPage';
 import IADashboardPage from './pages/ia/IADashboardPage';
+import AuditPage from './pages/audit/AuditPage';
+import StatsPage from './pages/stats/StatsPage';
 
 const AppRoutes: React.FC = () => {
   const { user } = useAuth();
@@ -53,9 +55,11 @@ const AppRoutes: React.FC = () => {
               <Route path="/creas" element={<Layout><CREASManagementPage /></Layout>} />
               <Route path="/benefits" element={<Layout><BenefitsManagementPage /></Layout>} />
               <Route path="/ia" element={<Layout><IADashboardPage /></Layout>} />
+              <Route path="/audit" element={<Layout><AuditPage /></Layout>} />
+              <Route path="/stats" element={<Layout><StatsPage /></Layout>} />
             </>
           )}
-          
+
           {user.cargo === 'servidor' && (
             <>
               <Route path="/" element={<Navigate to="/dashboard" />} />
@@ -67,9 +71,10 @@ const AppRoutes: React.FC = () => {
               <Route path="/creas" element={<Layout><CREASManagementPage /></Layout>} />
               <Route path="/benefits" element={<Layout><BenefitsManagementPage /></Layout>} />
               <Route path="/ia" element={<Layout><IADashboardPage /></Layout>} />
+              <Route path="/stats" element={<Layout><StatsPage /></Layout>} />
             </>
           )}
-          
+
           {user.cargo === 'beneficiario' && (
             <>
               <Route path="/" element={<Navigate to="/portal" />} />
