@@ -158,31 +158,4 @@ export const apiApplyForJob = async (token: string, jobId: number) => {
     return { message: 'Candidatura enviada com sucesso!' };
 }
 
-// Novas funções para dados de exemplo
-export const apiFetchBeneficiaries = async () => {
-    return { data: mockBeneficiaries };
-}
-
-export const apiFetchAppointments = async (params?: any) => {
-    return { data: mockAppointments };
-}
-
-export const apiFetchPrograms = async () => {
-    return { data: mockPrograms };
-}
-
-export const apiFetchNews = async () => {
-    return { data: mockNews };
-}
-
-export const apiFetchBeneficiaryById = async (id: string) => {
-    const beneficiary = mockBeneficiaries.find(b => b.id === parseInt(id));
-    return { data: beneficiary };
-}
-
-export const apiFetchBeneficiaryPrograms = async (id: string) => {
-    // Simular programas do beneficiário
-    return { data: mockPrograms.slice(0, 2) };
-}
-
 export default api;
