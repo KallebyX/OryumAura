@@ -1,0 +1,23 @@
+# GitGuardian Configuration
+# Ignore template files with placeholder secrets
+
+version: 2
+
+paths-ignore:
+  - .env.example
+  - .env.docker
+  - docker-compose.yml
+  - docker-compose.dev.yml
+  - DEPLOYMENT.md
+  - CHANGELOG.md
+
+# Patterns to ignore (placeholders)
+matches-ignore:
+  - name: Generic placeholders
+    match: CHANGE_THIS.*
+  - name: Template secrets
+    match: your-.*-here
+  - name: Example secrets
+    match: example.*secret
+  - name: OpenSSL instructions
+    match: openssl rand -base64

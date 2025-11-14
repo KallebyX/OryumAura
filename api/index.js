@@ -19,9 +19,15 @@ dotenv.config();
 
 // Validação obrigatória do JWT_SECRET (mínimo 32 caracteres)
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-  console.error('❌ ERRO CRÍTICO DE SEGURANÇA: JWT_SECRET não configurado ou muito curto!');
-  console.error('Configure uma variável de ambiente JWT_SECRET com pelo menos 32 caracteres.');
-  console.error('Exemplo: JWT_SECRET=$(openssl rand -base64 32)');
+  console.error('\n❌ ERRO CRÍTICO DE SEGURANÇA: JWT_SECRET não configurado ou muito curto!\n');
+  console.error('O sistema não pode iniciar sem um JWT_SECRET seguro (mínimo 32 caracteres).\n');
+  console.error('📝 Instruções de configuração:\n');
+  console.error('1. Gere um secret seguro:');
+  console.error('   openssl rand -base64 32\n');
+  console.error('2. Configure a variável de ambiente:');
+  console.error('   - Local: adicione JWT_SECRET=<seu-secret> no arquivo .env');
+  console.error('   - Vercel: Settings → Environment Variables → JWT_SECRET\n');
+  console.error('📚 Veja mais em: VERCEL_SETUP.md ou DEPLOYMENT.md\n');
   process.exit(1);
 }
 
