@@ -1,58 +1,43 @@
 {
-  "name": "Oryum Aura - Sistema de Assistência Social",
-  "short_name": "Oryum Aura",
-  "description": "Sistema completo de gestão da Secretaria de Assistência Social de Caçapava do Sul",
+  "name": "OryumAura - Sistema de Gestão Social",
+  "short_name": "OryumAura",
+  "description": "Sistema de Gestão para Secretaria de Assistência Social de Caçapava do Sul/RS",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#16a34a",
+  "theme_color": "#3b82f6",
   "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": ["government", "social", "productivity"],
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
   ],
-  "categories": ["government", "social", "utilities"],
-  "lang": "pt-BR",
-  "dir": "ltr",
-  "screenshots": [],
   "shortcuts": [
     {
+      "name": "Dashboard",
+      "url": "/"
+    },
+    {
       "name": "Beneficiários",
-      "short_name": "Beneficiários",
-      "description": "Acessar lista de beneficiários",
-      "url": "/#/admin/beneficiaries",
-      "icons": []
+      "url": "/admin/beneficiaries"
     },
     {
-      "name": "CRAS",
-      "short_name": "CRAS",
-      "description": "Gestão CRAS",
-      "url": "/#/cras",
-      "icons": []
-    },
-    {
-      "name": "CREAS",
-      "short_name": "CREAS",
-      "description": "Gestão CREAS",
-      "url": "/#/creas",
-      "icons": []
-    },
-    {
-      "name": "Benefícios",
-      "short_name": "Benefícios",
-      "description": "Gestão de Benefícios Eventuais",
-      "url": "/#/benefits",
-      "icons": []
+      "name": "Agendamentos",
+      "url": "/schedule"
     }
-  ]
+  ],
+  "prefer_related_applications": false
 }

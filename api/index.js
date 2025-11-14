@@ -7,13 +7,33 @@ import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import { body, validationResult } from 'express-validator';
 import winston from 'winston';
+import helmet from 'helmet';
+import crypto from 'crypto';
 
 // Carrega variáveis de ambiente
 dotenv.config();
 
+// ====================================================================
+// VALIDAÇÕES DE SEGURANÇA CRÍTICAS
+// ====================================================================
+
+// Validação obrigatória do JWT_SECRET (mínimo 32 caracteres)
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  console.error('\n❌ ERRO CRÍTICO DE SEGURANÇA: JWT_SECRET não configurado ou muito curto!\n');
+  console.error('O sistema não pode iniciar sem um JWT_SECRET seguro (mínimo 32 caracteres).\n');
+  console.error('📝 Instruções de configuração:\n');
+  console.error('1. Gere um secret seguro:');
+  console.error('   openssl rand -base64 32\n');
+  console.error('2. Configure a variável de ambiente:');
+  console.error('   - Local: adicione JWT_SECRET=<seu-secret> no arquivo .env');
+  console.error('   - Vercel: Settings → Environment Variables → JWT_SECRET\n');
+  console.error('📚 Veja mais em: VERCEL_SETUP.md ou DEPLOYMENT.md\n');
+  process.exit(1);
+}
+
 const app = express();
 const port = process.env.PORT || 3001;
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-change-this';
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '8h';
 const DB_PATH = process.env.DB_PATH || './database.db';
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173';
@@ -37,6 +57,40 @@ const logger = winston.createLogger({
     })
   ]
 });
+
+// ====================================================================
+// MIDDLEWARES DE SEGURANÇA
+// ====================================================================
+
+// Helmet.js - Headers de segurança recomendados pela OWASP
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"], // Permite Tailwind inline styles
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'", "data:"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  hsts: {
+    maxAge: 31536000, // 1 ano
+    includeSubDomains: true,
+    preload: true
+  },
+  frameguard: {
+    action: 'deny' // Previne clickjacking
+  },
+  noSniff: true, // X-Content-Type-Options: nosniff
+  xssFilter: true, // X-XSS-Protection
+  referrerPolicy: {
+    policy: 'strict-origin-when-cross-origin'
+  }
+}));
 
 // Configuração de CORS restritiva
 app.use(cors({
@@ -180,6 +234,22 @@ db.serialize(() => {
     role TEXT CHECK(role IN ('secretaria', 'servidor', 'beneficiario')) NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
+
+  db.run(`CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    token TEXT NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    revoked BOOLEAN DEFAULT 0,
+    revoked_at DATETIME,
+    ip_address TEXT,
+    user_agent TEXT,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+  )`);
+
+  db.run(`CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id)`);
 
   db.run(`CREATE TABLE IF NOT EXISTS news (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -598,17 +668,121 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
+// ====================================================================
+// REFRESH TOKEN HELPERS
+// ====================================================================
+
+/**
+ * Gera um refresh token seguro e o armazena no banco de dados
+ * @param {number} userId - ID do usuário
+ * @param {string} ipAddress - IP do cliente
+ * @param {string} userAgent - User agent do cliente
+ * @returns {Promise<string>} - O refresh token gerado
+ */
+const generateRefreshToken = (userId, ipAddress, userAgent) => {
+  return new Promise((resolve, reject) => {
+    // Gera token aleatório seguro (64 bytes = 128 caracteres hex)
+    const token = crypto.randomBytes(64).toString('hex');
+
+    // Refresh token expira em 7 dias
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    const sql = `INSERT INTO refresh_tokens (user_id, token, expires_at, ip_address, user_agent)
+                 VALUES (?, ?, ?, ?, ?)`;
+
+    db.run(sql, [userId, token, expiresAt.toISOString(), ipAddress, userAgent], (err) => {
+      if (err) {
+        logger.error('Erro ao salvar refresh token:', err);
+        return reject(err);
+      }
+      resolve(token);
+    });
+  });
+};
+
+/**
+ * Valida um refresh token e retorna os dados do usuário
+ * @param {string} token - O refresh token
+ * @returns {Promise<object>} - Dados do usuário
+ */
+const validateRefreshToken = (token) => {
+  return new Promise((resolve, reject) => {
+    const sql = `
+      SELECT rt.*, u.id, u.cpf, u.name, u.role
+      FROM refresh_tokens rt
+      JOIN users u ON rt.user_id = u.id
+      WHERE rt.token = ?
+        AND rt.revoked = 0
+        AND datetime(rt.expires_at) > datetime('now')
+    `;
+
+    db.get(sql, [token], (err, row) => {
+      if (err) {
+        logger.error('Erro ao validar refresh token:', err);
+        return reject(err);
+      }
+      if (!row) {
+        return reject(new Error('Refresh token inválido ou expirado'));
+      }
+      resolve(row);
+    });
+  });
+};
+
+/**
+ * Revoga um refresh token específico
+ * @param {string} token - O refresh token a ser revogado
+ * @returns {Promise<void>}
+ */
+const revokeRefreshToken = (token) => {
+  return new Promise((resolve, reject) => {
+    const sql = `UPDATE refresh_tokens
+                 SET revoked = 1, revoked_at = datetime('now')
+                 WHERE token = ?`;
+
+    db.run(sql, [token], (err) => {
+      if (err) {
+        logger.error('Erro ao revogar refresh token:', err);
+        return reject(err);
+      }
+      resolve();
+    });
+  });
+};
+
+/**
+ * Revoga todos os refresh tokens de um usuário
+ * @param {number} userId - ID do usuário
+ * @returns {Promise<void>}
+ */
+const revokeAllUserTokens = (userId) => {
+  return new Promise((resolve, reject) => {
+    const sql = `UPDATE refresh_tokens
+                 SET revoked = 1, revoked_at = datetime('now')
+                 WHERE user_id = ? AND revoked = 0`;
+
+    db.run(sql, [userId], (err) => {
+      if (err) {
+        logger.error('Erro ao revogar todos os tokens do usuário:', err);
+        return reject(err);
+      }
+      resolve();
+    });
+  });
+};
+
 
 // === ROTAS DE AUTENTICAÇÃO ===
 
 app.post('/api/login', authLimiter, [
   body('cpf').notEmpty().withMessage('CPF é obrigatório').isLength({ min: 11, max: 11 }).withMessage('CPF inválido'),
   body('senha').notEmpty().withMessage('Senha é obrigatória')
-], validateRequest, (req, res) => {
+], validateRequest, async (req, res) => {
   const { cpf, senha } = req.body;
 
   const sql = "SELECT * FROM users WHERE cpf = ?";
-  db.get(sql, [cpf], (err, user) => {
+  db.get(sql, [cpf], async (err, user) => {
     if (err) {
       logger.error('Erro no login:', err);
       return res.status(500).json({ "error": "Erro ao processar requisição." });
@@ -623,15 +797,110 @@ app.post('/api/login', authLimiter, [
       return res.status(401).json({ "error": "Credenciais inválidas." });
     }
 
+    // Gera access_token de curta duração (15 minutos)
     const access_token = jwt.sign(
       { id: user.id, cpf: user.cpf, role: user.role, name: user.name },
       JWT_SECRET,
-      { expiresIn: JWT_EXPIRATION }
+      { expiresIn: '15m' } // Access token de curta duração
     );
 
-    logger.info(`Login bem-sucedido para usuário: ${user.name} (${user.cpf})`);
-    res.json({ access_token });
+    try {
+      // Gera refresh_token de longa duração (7 dias) e armazena no banco
+      const refresh_token = await generateRefreshToken(
+        user.id,
+        req.ip,
+        req.get('user-agent')
+      );
+
+      logger.info(`Login bem-sucedido para usuário: ${user.name} (${user.cpf})`);
+
+      res.json({
+        access_token,
+        refresh_token,
+        expires_in: 900, // 15 minutos em segundos
+        token_type: 'Bearer',
+        user: {
+          id: user.id,
+          name: user.name,
+          cpf: user.cpf,
+          role: user.role
+        }
+      });
+    } catch (error) {
+      logger.error('Erro ao gerar refresh token:', error);
+      return res.status(500).json({ "error": "Erro ao processar requisição." });
+    }
   });
+});
+
+/**
+ * POST /api/refresh
+ * Renova o access_token usando um refresh_token válido
+ */
+app.post('/api/refresh', [
+  body('refresh_token').notEmpty().withMessage('Refresh token é obrigatório')
+], validateRequest, async (req, res) => {
+  const { refresh_token } = req.body;
+
+  try {
+    // Valida o refresh token
+    const tokenData = await validateRefreshToken(refresh_token);
+
+    // Gera novo access_token
+    const newAccessToken = jwt.sign(
+      {
+        id: tokenData.id,
+        cpf: tokenData.cpf,
+        role: tokenData.role,
+        name: tokenData.name
+      },
+      JWT_SECRET,
+      { expiresIn: '15m' }
+    );
+
+    logger.info(`Token renovado para usuário: ${tokenData.name} (${tokenData.cpf})`);
+
+    res.json({
+      access_token: newAccessToken,
+      expires_in: 900, // 15 minutos
+      token_type: 'Bearer'
+    });
+  } catch (error) {
+    logger.warn('Tentativa de refresh com token inválido:', error.message);
+    return res.status(401).json({
+      error: 'Refresh token inválido ou expirado.',
+      message: 'Por favor, faça login novamente.'
+    });
+  }
+});
+
+/**
+ * POST /api/logout
+ * Revoga o refresh_token do usuário
+ */
+app.post('/api/logout', authenticateToken, async (req, res) => {
+  const { refresh_token } = req.body;
+
+  try {
+    if (refresh_token) {
+      // Revoga o refresh token específico
+      await revokeRefreshToken(refresh_token);
+    } else {
+      // Revoga todos os tokens do usuário
+      await revokeAllUserTokens(req.user.id);
+    }
+
+    logger.info(`Logout realizado para usuário: ${req.user.name} (${req.user.cpf})`);
+
+    res.json({
+      message: 'Logout realizado com sucesso.'
+    });
+  } catch (error) {
+    logger.error('Erro ao fazer logout:', error);
+    return res.status(500).json({
+      error: 'Erro ao processar logout.'
+    });
+  }
 });
 
 app.get('/api/profile', authenticateToken, (req, res) => {

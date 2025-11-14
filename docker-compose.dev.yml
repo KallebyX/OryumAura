@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  # ====================================================================
+  # Development Frontend (Vite Dev Server)
+  # ====================================================================
+  frontend:
+    image: node:20-alpine
+    container_name: oryumaura-frontend-dev
+    working_dir: /app
+    command: npm run dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    networks:
+      - oryumaura-dev
+    stdin_open: true
+    tty: true
+
+  # ====================================================================
+  # Development Backend (Nodemon Hot Reload)
+  # ====================================================================
+  backend:
+    image: node:20-alpine
+    container_name: oryumaura-backend-dev
+    working_dir: /app
+    command: sh -c "npm install nodemon -g && nodemon api/index.js"
+    ports:
+      - "3001:3001"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - DB_PATH=/app/database.db
+      - JWT_SECRET=dev-secret-min-32-chars-for-development-only-change-in-prod
+      - JWT_EXPIRATION=8h
+      - CORS_ORIGIN=http://localhost:5173
+      - LOG_LEVEL=debug
+    networks:
+      - oryumaura-dev
+    depends_on:
+      - postgres-dev
+    stdin_open: true
+    tty: true
+
+  # ====================================================================
+  # PostgreSQL Development Database
+  # ====================================================================
+  postgres-dev:
+    image: postgres:16-alpine
+    container_name: oryumaura-postgres-dev
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=oryumaura_dev
+      - POSTGRES_USER=dev
+      - POSTGRES_PASSWORD=dev123
+    volumes:
+      - postgres-dev-data:/var/lib/postgresql/data
+    networks:
+      - oryumaura-dev
+    ports:
+      - "5433:5432"
+
+  # ====================================================================
+  # pgAdmin4 - Database Management Interface
+  # ====================================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: oryumaura-pgadmin
+    restart: unless-stopped
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@oryumaura.local
+      - PGADMIN_DEFAULT_PASSWORD=admin
+      - PGADMIN_CONFIG_SERVER_MODE=False
+    ports:
+      - "5050:80"
+    networks:
+      - oryumaura-dev
+    depends_on:
+      - postgres-dev
+
+volumes:
+  postgres-dev-data:
+    driver: local
+
+networks:
+  oryumaura-dev:
+    driver: bridge

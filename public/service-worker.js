@@ -1,9 +1,19 @@
-const CACHE_NAME = 'oryum-aura-v1';
+const CACHE_VERSION = '2.0.0';
+const CACHE_NAME = `oryum-aura-v${CACHE_VERSION}`;
+const CACHE_STATIC = `${CACHE_NAME}-static`;
+const CACHE_DYNAMIC = `${CACHE_NAME}-dynamic`;
+const CACHE_API = `${CACHE_NAME}-api`;
+
+// Core assets to cache on install
 const urlsToCache = [
   '/',
   '/index.html',
-  '/manifest.json'
+  '/manifest.json',
+  '/favicon.ico'
 ];
+
+// API endpoints to cache with specific strategies
+const API_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
@@ -23,17 +33,19 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  const cacheWhitelist = [CACHE_NAME];
+  const cacheWhitelist = [CACHE_STATIC, CACHE_DYNAMIC, CACHE_API];
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (!cacheWhitelist.includes(cacheName)) {
-            console.log('Deleting old cache:', cacheName);
+            console.log('🗑️ Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
+    }).then(() => {
+      console.log('✅ Service Worker activated, version:', CACHE_VERSION);
     })
   );
   // Take control of all pages immediately
