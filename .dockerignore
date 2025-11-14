@@ -1,0 +1,59 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# Development
+.env
+.env.local
+.env.*.local
+
+# Build
+dist
+build
+.cache
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Version Control
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Testing
+coverage
+.nyc_output
+*.test.js
+*.spec.js
+__tests__
+__mocks__
+
+# Documentation
+README.md
+CHANGELOG.md
+TODO.md
+*.md
+docs
+
+# Logs
+logs
+*.log
+
+# Database (dev)
+database.db
+*.sqlite
+*.sqlite3
+
+# OS
+.DS_Store
+Thumbs.db
