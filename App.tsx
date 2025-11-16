@@ -2,6 +2,7 @@ import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { DarkModeProvider } from './context/DarkModeContext';
 import LoginPage from './pages/LoginPage';
 import ServerDashboardPage from './pages/ServerDashboardPage';
 import BeneficiaryPortalPage from './pages/BeneficiaryPortalPage';
@@ -22,6 +23,7 @@ import BenefitsManagementPage from './pages/benefits/BenefitsManagementPage';
 import IADashboardPage from './pages/ia/IADashboardPage';
 import AuditPage from './pages/audit/AuditPage';
 import StatsPage from './pages/stats/StatsPage';
+import ComponentShowcasePage from './pages/ComponentShowcasePage';
 
 const AppRoutes: React.FC = () => {
   const { user } = useAuth();
@@ -86,6 +88,7 @@ const AppRoutes: React.FC = () => {
           <Route path="/home" element={<Layout><HomePage /></Layout>} />
           <Route path="/news" element={<Layout><NewsPage /></Layout>} />
           <Route path="/news/:id" element={<Layout><SingleNewsPage /></Layout>} />
+          <Route path="/showcase" element={<Layout><ComponentShowcasePage /></Layout>} />
           <Route path="/login" element={<Navigate to="/" />} />
           <Route path="*" element={<Navigate to="/" />} />
         </>
@@ -98,9 +101,11 @@ const App: React.FC = () => {
   return (
     <AuthProvider>
       <ToastProvider>
-        <HashRouter>
-          <AppRoutes />
-        </HashRouter>
+        <DarkModeProvider>
+          <HashRouter>
+            <AppRoutes />
+          </HashRouter>
+        </DarkModeProvider>
       </ToastProvider>
     </AuthProvider>
   );
