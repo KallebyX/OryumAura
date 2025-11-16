@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import {
   Home,
@@ -157,29 +158,49 @@ const Sidebar: React.FC = () => {
     if (hasChildren) {
       return (
         <div key={item.name}>
-          <button
+          <motion.button
+            whileHover={{ x: 4 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => toggleMenu(item.name)}
-            className={`w-full flex items-center justify-between px-4 py-3 text-gray-700 hover:bg-gray-100 transition-colors ${
+            className={`w-full flex items-center justify-between px-4 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 transition-all rounded-lg mx-2 ${
               isChild ? 'pl-8' : ''
             }`}
           >
             <div className="flex items-center gap-3">
-              <span className="text-gray-600">{item.icon}</span>
+              <motion.span
+                className="text-gray-600"
+                whileHover={{ rotate: 5, scale: 1.1 }}
+                transition={{ type: "spring", stiffness: 400 }}
+              >
+                {item.icon}
+              </motion.span>
               {isOpen && (
                 <span className="font-medium">{item.name}</span>
               )}
             </div>
             {isOpen && (
-              <span className="text-gray-400">
-                {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-              </span>
+              <motion.span
+                className="text-gray-400"
+                animate={{ rotate: isExpanded ? 0 : -90 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ChevronDown size={18} />
+              </motion.span>
             )}
-          </button>
-          {isExpanded && isOpen && (
-            <div className="bg-gray-50">
-              {item.children?.map(child => renderMenuItem(child, true))}
-            </div>
-          )}
+          </motion.button>
+          <AnimatePresence>
+            {isExpanded && isOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="bg-gray-50/50 overflow-hidden"
+              >
+                {item.children?.map(child => renderMenuItem(child, true))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       );
     }
@@ -188,16 +209,27 @@ const Sidebar: React.FC = () => {
       <Link
         key={item.name}
         to={item.path!}
-        className={`flex items-center justify-between px-4 py-3 transition-all ${
+        className={`relative group flex items-center justify-between px-4 py-3 mx-2 transition-all rounded-lg ${
           active
-            ? 'bg-prefeitura-verde text-white shadow-md'
-            : 'text-gray-700 hover:bg-gray-100'
+            ? 'bg-gradient-to-r from-prefeitura-verde to-green-600 text-white shadow-lg shadow-green-500/30'
+            : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100'
         } ${isChild ? 'pl-8' : ''}`}
       >
+        {active && (
+          <motion.div
+            layoutId="activeIndicator"
+            className="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full"
+            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+          />
+        )}
         <div className="flex items-center gap-3">
-          <span className={active ? 'text-white' : 'text-gray-600'}>
+          <motion.span
+            className={active ? 'text-white' : 'text-gray-600'}
+            whileHover={{ scale: 1.1, rotate: 5 }}
+            transition={{ type: "spring", stiffness: 400 }}
+          >
             {item.icon}
-          </span>
+          </motion.span>
           {isOpen && (
             <span className={`font-medium ${active ? 'text-white' : ''}`}>
               {item.name}
@@ -205,11 +237,14 @@ const Sidebar: React.FC = () => {
           )}
         </div>
         {isOpen && item.badge && (
-          <span
-            className={`text-xs px-2 py-0.5 rounded-full text-white ${item.badgeColor || 'bg-blue-500'}`}
+          <motion.span
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            whileHover={{ scale: 1.1 }}
+            className={`text-xs px-2 py-0.5 rounded-full text-white font-semibold ${item.badgeColor || 'bg-blue-500'} shadow-lg`}
           >
             {item.badge}
-          </span>
+          </motion.span>
         )}
       </Link>
     );
@@ -218,18 +253,24 @@ const Sidebar: React.FC = () => {
   return (
     <>
       {/* Mobile Overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden backdrop-blur-sm"
+            onClick={() => setIsOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Sidebar */}
-      <aside
-        className={`fixed left-0 top-0 h-full bg-white shadow-lg z-40 transition-all duration-300 ${
-          isOpen ? 'w-64' : 'w-0 lg:w-20'
-        }`}
+      <motion.aside
+        initial={false}
+        animate={{ width: isOpen ? 256 : 80 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className="fixed left-0 top-0 h-full bg-white shadow-2xl z-40 border-r border-gray-100"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
@@ -279,27 +320,43 @@ const Sidebar: React.FC = () => {
         </nav>
 
         {/* Footer */}
-        {isOpen && (
-          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
-            <div className="text-center">
-              <p className="text-xs text-gray-500">
-                Versão 3.0 - Sistema Completo
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                © 2025 Oryum Tech
-              </p>
-            </div>
-          </div>
-        )}
-      </aside>
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-gradient-to-t from-gray-50 to-white"
+            >
+              <div className="text-center">
+                <p className="text-xs text-gray-500 font-medium">
+                  Versão 3.0 - Sistema Completo
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  © 2025 Oryum Tech
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.aside>
 
       {/* Mobile Toggle Button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 left-6 p-4 bg-prefeitura-verde text-white rounded-full shadow-lg z-20 lg:hidden"
-      >
-        <Menu size={24} />
-      </button>
+      <AnimatePresence>
+        {!isOpen && (
+          <motion.button
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setIsOpen(true)}
+            className="fixed bottom-6 left-6 p-4 bg-gradient-to-r from-prefeitura-verde to-green-600 text-white rounded-full shadow-lg shadow-green-500/30 z-20 lg:hidden"
+          >
+            <Menu size={24} />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </>
   );
 };
