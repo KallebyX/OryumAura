@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     const isDevelopment = mode === 'development';
+    const isProduction = mode === 'production';
 
     return {
       plugins: [react()],
@@ -18,6 +19,7 @@ export default defineConfig(({ mode }) => {
         )
       },
       server: {
+        port: 5173,
         proxy: isDevelopment ? {
           '/api': {
             target: env.VITE_API_URL || 'http://localhost:3001',
@@ -33,9 +35,9 @@ export default defineConfig(({ mode }) => {
       },
       build: {
         outDir: 'dist',
-        sourcemap: mode !== 'production',
-        minify: mode === 'production' ? 'terser' : false,
-        terserOptions: mode === 'production' ? {
+        sourcemap: !isProduction,
+        minify: isProduction ? 'terser' : false,
+        terserOptions: isProduction ? {
           compress: {
             drop_console: true,
             drop_debugger: true
@@ -54,6 +56,15 @@ export default defineConfig(({ mode }) => {
       },
       optimizeDeps: {
         include: ['react', 'react-dom', 'react-router-dom', 'axios']
+      },
+      // Configuracoes para producao na Vercel
+      preview: {
+        port: 4173,
+        strictPort: true
+      },
+      // Excluir dependencias do backend do bundle
+      ssr: {
+        noExternal: ['@neondatabase/serverless']
       }
     };
 });

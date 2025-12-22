@@ -1,7 +1,20 @@
 import axios from 'axios';
 
+// Determina a URL base da API dinamicamente
+const getBaseURL = () => {
+  // Em produção (Vercel), usa a URL relativa
+  if (typeof window !== 'undefined') {
+    // Verifica se estamos em produção
+    if (window.location.hostname !== 'localhost') {
+      return '/api';
+    }
+  }
+  // Em desenvolvimento, usa localhost
+  return process.env.API_URL || 'http://localhost:3001/api';
+};
+
 export const api = axios.create({
-  baseURL: 'http://localhost:3001/api',
+  baseURL: getBaseURL(),
 });
 
 // Interceptor para adicionar token nas requisições
