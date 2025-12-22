@@ -9,9 +9,12 @@ import { body, validationResult } from 'express-validator';
 import winston from 'winston';
 import helmet from 'helmet';
 import crypto from 'crypto';
+import { connectDB, createNeonTables, seedNeonDatabase } from './db.js';
 
 // Carrega variáveis de ambiente
 dotenv.config();
+
+const DB_TYPE = process.env.DB_TYPE || 'sqlite';
 
 // ====================================================================
 // VALIDAÇÕES DE SEGURANÇA CRÍTICAS
@@ -130,14 +133,38 @@ app.use((req, res, next) => {
   next();
 });
 
-// Conecta ao banco de dados SQLite (cria o arquivo se não existir)
-const db = new sqlite3.Database(DB_PATH, (err) => {
-  if (err) {
-    logger.error('Erro ao conectar ao banco de dados:', err);
-    process.exit(1);
+// Variável global para o banco de dados (será inicializada assincronamente)
+let db = null;
+
+// Conecta ao banco de dados (SQLite ou Neon)
+async function initializeDatabase() {
+  try {
+    db = await connectDB(logger);
+    logger.info(`Banco de dados conectado (tipo: ${db.type})`);
+
+    // Se for Neon/Postgres, cria as tabelas e faz seed
+    if (db.type === 'neon') {
+      await createNeonTables(logger);
+      await seedNeonDatabase(logger);
+    }
+
+    return db;
+  } catch (error) {
+    logger.error('Erro ao conectar ao banco de dados:', error);
+    throw error;
   }
-  logger.info(`Conectado ao banco de dados SQLite em: ${DB_PATH}`);
-});
+}
+
+// Para SQLite em desenvolvimento, mantemos a conexão síncrona para compatibilidade
+if (DB_TYPE === 'sqlite') {
+  db = new sqlite3.Database(DB_PATH, (err) => {
+    if (err) {
+      logger.error('Erro ao conectar ao banco de dados SQLite:', err);
+      process.exit(1);
+    }
+    logger.info(`Conectado ao banco de dados SQLite em: ${DB_PATH}`);
+  });
+}
 
 // Middleware de auditoria LGPD
 const auditLog = (req, action, resource, resourceId, details = null) => {
@@ -2252,12 +2279,34 @@ app.use((err, req, res, next) => {
 });
 
 // Inicia o servidor
-app.listen(port, () => {
-  logger.info(`🚀 Oryum Aura API rodando em http://localhost:${port}`);
-  logger.info(`📊 Total de endpoints implementados: 60+`);
-  logger.info(`🔐 Autenticação JWT ativada`);
-  logger.info(`📝 Sistema de auditoria LGPD ativo`);
-  logger.info(`🤖 IA de predição e chatbot implementados`);
-  logger.info(`🔒 Rate limiting e CORS configurados`);
-  logger.info(`📋 Logging com Winston ativado`);
-});
+async function startServer() {
+  // Para Neon/Postgres, inicializa o banco assincronamente
+  if (DB_TYPE === 'neon' || DB_TYPE === 'postgres') {
+    try {
+      await initializeDatabase();
+      logger.info('✅ Banco Neon inicializado com sucesso');
+    } catch (error) {
+      logger.error('❌ Falha ao inicializar banco Neon:', error);
+      process.exit(1);
+    }
+  }
+
+  app.listen(port, () => {
+    logger.info(`🚀 Oryum Aura API rodando em http://localhost:${port}`);
+    logger.info(`📊 Total de endpoints implementados: 60+`);
+    logger.info(`🔐 Autenticação JWT ativada`);
+    logger.info(`📝 Sistema de auditoria LGPD ativo`);
+    logger.info(`🤖 IA de predição e chatbot implementados`);
+    logger.info(`🔒 Rate limiting e CORS configurados`);
+    logger.info(`📋 Logging com Winston ativado`);
+    logger.info(`💾 Banco de dados: ${DB_TYPE.toUpperCase()}`);
+  });
+}
+
+// Exporta o app para Vercel Serverless
+export default app;
+
+// Inicia o servidor se não estiver sendo importado como módulo
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
