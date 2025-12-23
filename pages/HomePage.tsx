@@ -58,30 +58,30 @@ const HomePage: React.FC = () => {
     <Layout>
       <div className="overflow-x-hidden">
         {/* Hero Section */}
-        <motion.section 
-          className="bg-gradient-to-br from-brand-primary-700 to-brand-primary-900 text-white"
+        <motion.section
+          className="bg-gradient-to-br from-green-700 to-green-900 text-white"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
         >
           <div className="container mx-auto px-6 py-24 text-center">
-            <motion.h1 
-              className="text-4xl md:text-6xl font-heading font-extrabold leading-tight"
+            <motion.h1
+              className="text-4xl md:text-6xl font-heading font-extrabold leading-tight text-white"
               variants={itemVariants}
             >
               Portal de Assistência Social
             </motion.h1>
-            <motion.p 
-              className="mt-4 text-lg md:text-xl text-brand-primary-100 max-w-3xl mx-auto"
+            <motion.p
+              className="mt-4 text-lg md:text-xl text-green-100 max-w-3xl mx-auto"
               variants={itemVariants}
             >
               Conectando cidadãos de Caçapava do Sul aos serviços e programas que promovem bem-estar e dignidade.
             </motion.p>
-            <motion.div 
+            <motion.div
               className="mt-10 flex justify-center gap-4"
               variants={itemVariants}
             >
-              <Link to="/login" className="bg-white text-brand-primary-800 font-bold py-3 px-8 rounded-full text-lg transition-all transform hover:scale-105 shadow-lg hover:shadow-xl">
+              <Link to="/login" className="bg-white text-green-800 font-bold py-3 px-8 rounded-full text-lg transition-all transform hover:scale-105 shadow-lg hover:shadow-xl">
                 Acessar Portal
               </Link>
               <a href="#noticias" className="bg-transparent border-2 border-white/80 text-white font-bold py-3 px-8 rounded-full text-lg transition-all transform hover:scale-105 hover:bg-white/10">
@@ -92,43 +92,43 @@ const HomePage: React.FC = () => {
         </motion.section>
 
         {/* Seção de Acesso Rápido */}
-        <section id="acesso-rapido" className="py-20 bg-white">
+        <section id="acesso-rapido" className="py-20 bg-white dark:bg-gray-800">
           <div className="container mx-auto px-6">
-            <h2 className="text-4xl font-heading font-bold text-center text-neutral-800 mb-16">Acesso Rápido</h2>
-            <motion.div 
+            <h2 className="text-4xl font-heading font-bold text-center text-gray-800 dark:text-white mb-16">Acesso Rápido</h2>
+            <motion.div
               className="grid md:grid-cols-3 gap-8"
               variants={containerVariants}
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, amount: 0.3 }}
             >
-              <motion.div variants={itemVariants} className="bg-neutral-50 p-8 rounded-2xl shadow-sm hover:shadow-lg transition-shadow transform hover:-translate-y-2 duration-300">
-                <div className="flex items-center justify-center h-16 w-16 rounded-full bg-brand-primary-100 text-brand-primary-700 mb-6">
+              <motion.div variants={itemVariants} className="bg-gray-50 dark:bg-gray-700 p-8 rounded-2xl shadow-sm hover:shadow-lg transition-shadow transform hover:-translate-y-2 duration-300">
+                <div className="flex items-center justify-center h-16 w-16 rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 mb-6">
                   <Users size={32} />
                 </div>
-                <h3 className="text-2xl font-heading font-bold mb-3 text-neutral-900">Portal do Cidadão</h3>
-                <p className="text-neutral-600 mb-6">Consulte seus benefícios, agendamentos e informações de programas sociais.</p>
-                <Link to="/beneficiary-portal" className="font-bold text-brand-primary-700 hover:text-brand-primary-800 flex items-center group">
+                <h3 className="text-2xl font-heading font-bold mb-3 text-gray-900 dark:text-white">Portal do Cidadão</h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-6">Consulte seus benefícios, agendamentos e informações de programas sociais.</p>
+                <Link to="/beneficiary-portal" className="font-bold text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 flex items-center group">
                   Acessar agora <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </motion.div>
-              <motion.div variants={itemVariants} className="bg-neutral-50 p-8 rounded-2xl shadow-sm hover:shadow-lg transition-shadow transform hover:-translate-y-2 duration-300">
-                <div className="flex items-center justify-center h-16 w-16 rounded-full bg-brand-secondary-200 text-brand-secondary-800 mb-6">
+              <motion.div variants={itemVariants} className="bg-gray-50 dark:bg-gray-700 p-8 rounded-2xl shadow-sm hover:shadow-lg transition-shadow transform hover:-translate-y-2 duration-300">
+                <div className="flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 mb-6">
                   <ShieldCheck size={32} />
                 </div>
-                <h3 className="text-2xl font-heading font-bold mb-3 text-neutral-900">Painel do Servidor</h3>
-                <p className="text-neutral-600 mb-6">Gerencie atendimentos, beneficiários e visualize relatórios completos.</p>
-                <Link to="/login" className="font-bold text-brand-secondary-700 hover:text-brand-secondary-800 flex items-center group">
+                <h3 className="text-2xl font-heading font-bold mb-3 text-gray-900 dark:text-white">Painel do Servidor</h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-6">Gerencie atendimentos, beneficiários e visualize relatórios completos.</p>
+                <Link to="/login" className="font-bold text-yellow-700 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-300 flex items-center group">
                   Fazer Login <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </motion.div>
-              <motion.div variants={itemVariants} className="bg-neutral-50 p-8 rounded-2xl shadow-sm hover:shadow-lg transition-shadow transform hover:-translate-y-2 duration-300">
-                <div className="flex items-center justify-center h-16 w-16 rounded-full bg-red-100 text-red-700 mb-6">
+              <motion.div variants={itemVariants} className="bg-gray-50 dark:bg-gray-700 p-8 rounded-2xl shadow-sm hover:shadow-lg transition-shadow transform hover:-translate-y-2 duration-300">
+                <div className="flex items-center justify-center h-16 w-16 rounded-full bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 mb-6">
                   <Newspaper size={32} />
                 </div>
-                <h3 className="text-2xl font-heading font-bold mb-3 text-neutral-900">Programas Sociais</h3>
-                <p className="text-neutral-600 mb-6">Conheça os programas disponíveis, seus objetivos e como participar.</p>
-                <Link to="/programs" className="font-bold text-red-700 hover:text-red-800 flex items-center group">
+                <h3 className="text-2xl font-heading font-bold mb-3 text-gray-900 dark:text-white">Programas Sociais</h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-6">Conheça os programas disponíveis, seus objetivos e como participar.</p>
+                <Link to="/programs" className="font-bold text-red-700 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 flex items-center group">
                   Saber mais <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </motion.div>
@@ -137,15 +137,15 @@ const HomePage: React.FC = () => {
         </section>
 
         {/* Seção de Notícias */}
-        <section id="noticias" className="py-20">
+        <section id="noticias" className="py-20 bg-gray-50 dark:bg-gray-900">
           <div className="container mx-auto px-6">
-            <h2 className="text-4xl font-heading font-bold text-center text-neutral-800 mb-16">Últimas Notícias</h2>
-            {loading && <p className="text-center text-neutral-500">Carregando notícias...</p>}
+            <h2 className="text-4xl font-heading font-bold text-center text-gray-800 dark:text-white mb-16">Últimas Notícias</h2>
+            {loading && <p className="text-center text-gray-500 dark:text-gray-400">Carregando notícias...</p>}
             {error && <p className="text-center text-red-500">{error}</p>}
             {!loading && !error && news.length === 0 && (
-              <p className="text-center text-neutral-500">Nenhuma notícia encontrada no momento.</p>
+              <p className="text-center text-gray-500 dark:text-gray-400">Nenhuma notícia encontrada no momento.</p>
             )}
-            <motion.div 
+            <motion.div
               className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
               variants={containerVariants}
               initial="hidden"
@@ -153,16 +153,16 @@ const HomePage: React.FC = () => {
               viewport={{ once: true, amount: 0.2 }}
             >
               {news.map((item) => (
-                <motion.article 
-                  key={item.id} 
-                  className="bg-white rounded-2xl shadow-md overflow-hidden flex flex-col group transition-all duration-300 hover:shadow-xl hover:-translate-y-2"
+                <motion.article
+                  key={item.id}
+                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden flex flex-col group transition-all duration-300 hover:shadow-xl hover:-translate-y-2"
                   variants={itemVariants}
                 >
                   <div className="p-6 flex-grow flex flex-col">
-                    <p className="text-sm text-neutral-500 mb-2">{formatDate(item.createdAt)}</p>
-                    <h3 className="text-xl font-heading font-bold mb-3 text-neutral-900 flex-grow">{item.title}</h3>
-                    <p className="text-neutral-600 mb-6">{item.content.substring(0, 120)}...</p>
-                    <a href="#" className="font-bold text-brand-primary-700 hover:text-brand-primary-800 flex items-center mt-auto group">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{formatDate(item.createdAt)}</p>
+                    <h3 className="text-xl font-heading font-bold mb-3 text-gray-900 dark:text-white flex-grow">{item.title}</h3>
+                    <p className="text-gray-600 dark:text-gray-300 mb-6">{item.content.substring(0, 120)}...</p>
+                    <a href="#" className="font-bold text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 flex items-center mt-auto group">
                       Ler matéria completa <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
                     </a>
                   </div>

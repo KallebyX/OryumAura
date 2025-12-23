@@ -10,8 +10,8 @@ type Tab = 'profile' | 'courses' | 'forum' | 'jobs' | 'appointments';
 const ProgressBar: React.FC<{ value: number; max: number }> = ({ value, max }) => {
     const percentage = max > 0 ? (value / max) * 100 : 0;
     return (
-        <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div className="bg-brand-primary-900 h-2.5 rounded-full transition-all duration-500" style={{ width: `${percentage}%` }}></div>
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+            <div className="bg-green-700 dark:bg-green-500 h-2.5 rounded-full transition-all duration-500" style={{ width: `${percentage}%` }}></div>
         </div>
     );
 };
@@ -41,27 +41,27 @@ const ProfileView: React.FC = () => {
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg text-center animate-slide-in">
-                <img src={`https://api.dicebear.com/7.x/initials/svg?seed=${profile.nome}`} alt="Avatar" className="w-24 h-24 rounded-full mx-auto mb-4 border-4 border-brand-primary-200"/>
-                <h3 className="text-2xl font-bold text-gray-800">{profile.nome}</h3>
+            <div className="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg text-center animate-slide-in">
+                <img src={`https://api.dicebear.com/7.x/initials/svg?seed=${profile.nome}`} alt="Avatar" className="w-24 h-24 rounded-full mx-auto mb-4 border-4 border-green-200 dark:border-green-700"/>
+                <h3 className="text-2xl font-bold text-gray-800 dark:text-white">{profile.nome}</h3>
                 <div className="mt-6 space-y-4">
                      <div>
                         <div className="flex justify-between items-baseline mb-1">
-                            <span className="text-lg font-bold text-brand-primary-900">Nível {profile.nivel}</span>
-                            <span className="text-sm text-gray-500">{profile.pontos} / {profile.pontosProximoNivel} XP</span>
+                            <span className="text-lg font-bold text-green-700 dark:text-green-400">Nível {profile.nivel}</span>
+                            <span className="text-sm text-gray-500 dark:text-gray-400">{profile.pontos} / {profile.pontosProximoNivel} XP</span>
                         </div>
                         <ProgressBar value={profile.pontos} max={profile.pontosProximoNivel} />
                     </div>
                 </div>
             </div>
-            <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg animate-slide-in" style={{animationDelay: '100ms'}}>
-                 <h4 className="text-xl font-bold text-gray-700 mb-4">Suas Conquistas</h4>
+            <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg animate-slide-in" style={{animationDelay: '100ms'}}>
+                 <h4 className="text-xl font-bold text-gray-700 dark:text-gray-200 mb-4">Suas Conquistas</h4>
                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {levelAchievements.map(ach => (
-                        <div key={ach.level} className={`p-4 rounded-lg text-center border-2 transition-all ${profile.nivel >= ach.level ? 'border-brand-secondary-400 bg-yellow-50' : 'bg-gray-100 border-gray-200 opacity-60'}`}>
+                        <div key={ach.level} className={`p-4 rounded-lg text-center border-2 transition-all ${profile.nivel >= ach.level ? 'border-yellow-400 bg-yellow-50 dark:bg-yellow-900/30' : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 opacity-60'}`}>
                             <span className="text-4xl">{ach.icon}</span>
-                            <p className="font-semibold mt-2">{ach.name}</p>
-                            <p className="text-xs text-gray-500">{ach.description}</p>
+                            <p className="font-semibold mt-2 text-gray-800 dark:text-gray-200">{ach.name}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{ach.description}</p>
                         </div>
                     ))}
                  </div>
@@ -102,7 +102,7 @@ const CoursesView: React.FC = () => {
                 {enrolledCourses.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {enrolledCourses.map(course => (
-                           <div key={course.id} className="bg-white p-4 rounded-lg shadow-md flex justify-between items-center border-l-4 border-brand-accent-500">
+                           <div key={course.id} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md flex justify-between items-center border-l-4 border-blue-500">
                                 <div>
                                     <span className="text-xs font-semibold bg-green-100 text-green-800 px-2 py-1 rounded-full">{course.categoria}</span>
                                     <h4 className="text-lg font-bold mt-2">{course.titulo}</h4>
@@ -123,7 +123,7 @@ const CoursesView: React.FC = () => {
                                 <h4 className="text-lg font-bold mt-2">{course.titulo}</h4>
                                 <p className="text-sm text-gray-600 mt-1">{course.descricao}</p>
                             </div>
-                            <button onClick={() => handleEnroll(course.id)} className="bg-brand-accent-500 text-white font-semibold px-4 py-2 rounded-lg hover:bg-brand-accent-600 transition-colors self-start sm:self-center flex-shrink-0 sm:ml-4">
+                            <button onClick={() => handleEnroll(course.id)} className="bg-blue-500 text-white font-semibold px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors self-start sm:self-center flex-shrink-0 sm:ml-4">
                                 Inscrever-se
                             </button>
                         </div>
@@ -158,16 +158,16 @@ const ForumView: React.FC = () => {
         <div>
             <form onSubmit={handleSubmit} className="bg-white p-4 rounded-lg shadow-md mb-6 space-y-3">
                 <h4 className="text-lg font-bold">Criar nova postagem no fórum</h4>
-                <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título da sua dúvida ou discussão" required className="w-full border p-2 rounded-md focus:ring-brand-primary-500 focus:border-brand-primary-500" />
-                <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Descreva sua mensagem aqui..." required className="w-full border p-2 rounded-md h-24 focus:ring-brand-primary-500 focus:border-brand-primary-500"></textarea>
-                <button type="submit" className="bg-brand-primary-900 text-white font-semibold px-4 py-2 rounded-lg hover:bg-brand-primary-800 transition-colors">
+                <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título da sua dúvida ou discussão" required className="w-full border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white p-2 rounded-md focus:ring-green-500 focus:border-green-500" />
+                <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Descreva sua mensagem aqui..." required className="w-full border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white p-2 rounded-md h-24 focus:ring-green-500 focus:border-green-500"></textarea>
+                <button type="submit" className="bg-green-700 text-white font-semibold px-4 py-2 rounded-lg hover:bg-green-800 transition-colors">
                     Publicar Postagem
                 </button>
             </form>
             <div className="space-y-4">
                 {posts.map(post => (
                     <div key={post.id} className="bg-white p-4 rounded-lg shadow-md">
-                        <h5 className="font-bold text-lg text-brand-primary-900">{post.titulo}</h5>
+                        <h5 className="font-bold text-lg text-green-700 dark:text-green-400">{post.titulo}</h5>
                         <p className="text-xs text-gray-500 mb-2">Por: {post.autor_nome} em {post.data}</p>
                         <p className="my-2 text-gray-700">{post.conteudo}</p>
                         <div className="flex items-center space-x-4 mt-3 text-sm text-gray-600 border-t pt-2">
@@ -214,7 +214,7 @@ const JobsView: React.FC = () => {
                             <p className="text-sm font-semibold text-gray-600">{job.empresa} - {job.localidade}</p>
                             <p className="text-sm text-gray-700 mt-2">{job.descricao}</p>
                         </div>
-                         <button onClick={() => handleApply(job.id)} disabled={applied.includes(job.id)} className="mt-4 sm:mt-0 bg-brand-primary-900 text-white font-semibold px-4 py-2 rounded-lg hover:bg-brand-primary-800 transition-colors flex-shrink-0 sm:ml-4 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                         <button onClick={() => handleApply(job.id)} disabled={applied.includes(job.id)} className="mt-4 sm:mt-0 bg-green-700 text-white font-semibold px-4 py-2 rounded-lg hover:bg-green-800 transition-colors flex-shrink-0 sm:ml-4 disabled:bg-gray-400 disabled:cursor-not-allowed">
                             {applied.includes(job.id) ? 'Candidatura Enviada' : 'Candidatar-se'}
                         </button>
                     </div>
@@ -301,7 +301,7 @@ const BeneficiaryPortalPage: React.FC = () => {
            
             <div className="mb-6 bg-white p-2 rounded-lg shadow-sm flex space-x-1 sm:space-x-2 flex-wrap justify-center">
                 {tabs.map(tab => (
-                    <button key={tab.id} onClick={() => setActiveTab(tab.id as Tab)} className={`flex items-center justify-center px-3 py-2 font-semibold rounded-md transition-colors text-sm sm:text-base w-full sm:w-auto my-1 sm:my-0 ${activeTab === tab.id ? 'bg-brand-primary-900 text-white shadow' : 'text-gray-600 hover:bg-gray-100'}`}>
+                    <button key={tab.id} onClick={() => setActiveTab(tab.id as Tab)} className={`flex items-center justify-center px-3 py-2 font-semibold rounded-md transition-colors text-sm sm:text-base w-full sm:w-auto my-1 sm:my-0 ${activeTab === tab.id ? 'bg-green-700 text-white shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>
                         {tab.icon} {tab.label}
                     </button>
                 ))}
