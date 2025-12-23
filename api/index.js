@@ -166,7 +166,99 @@ if (DB_TYPE === 'sqlite') {
   });
 }
 
-// Middleware de auditoria LGPD
+// ====================================================================
+// INICIALIZAÇÃO DO BANCO PARA NEON/POSTGRES (Serverless)
+// ====================================================================
+
+// Promise para rastrear inicialização do banco
+let dbInitPromise = null;
+let dbInitialized = DB_TYPE === 'sqlite'; // SQLite já é síncrono
+
+// Para Neon/Postgres, inicializa o banco imediatamente
+if (DB_TYPE === 'neon' || DB_TYPE === 'postgres') {
+  dbInitPromise = initializeDatabase()
+    .then(() => {
+      dbInitialized = true;
+      logger.info('✅ Banco Neon/Postgres inicializado com sucesso');
+    })
+    .catch((error) => {
+      logger.error('❌ Falha ao inicializar banco Neon/Postgres:', error);
+    });
+}
+
+// Middleware para garantir que o banco está pronto antes de processar requisições
+const ensureDbReady = async (req, res, next) => {
+  if (dbInitialized && db) {
+    return next();
+  }
+
+  if (dbInitPromise) {
+    try {
+      await dbInitPromise;
+      if (db) {
+        return next();
+      }
+    } catch (error) {
+      logger.error('Erro ao aguardar inicialização do banco:', error);
+    }
+  }
+
+  return res.status(503).json({
+    error: 'Serviço temporariamente indisponível. Banco de dados não está pronto.',
+    retry_after: 5
+  });
+};
+
+// Aplica o middleware para todas as rotas /api/
+app.use('/api/', ensureDbReady);
+
+// ====================================================================
+// HELPERS PARA QUERIES UNIFICADAS (SQLite e Neon)
+// ====================================================================
+
+// Helper para executar query com SELECT (retorna todas as linhas)
+const dbAll = (sql, params = []) => {
+  return new Promise((resolve, reject) => {
+    if (db.type === 'neon') {
+      db.all(sql, params).then(resolve).catch(reject);
+    } else {
+      db.all(sql, params, (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    }
+  });
+};
+
+// Helper para executar query com SELECT (retorna uma linha)
+const dbGet = (sql, params = []) => {
+  return new Promise((resolve, reject) => {
+    if (db.type === 'neon') {
+      db.get(sql, params).then(resolve).catch(reject);
+    } else {
+      db.get(sql, params, (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
+    }
+  });
+};
+
+// Helper para executar query INSERT/UPDATE/DELETE
+const dbRun = (sql, params = []) => {
+  return new Promise((resolve, reject) => {
+    if (db.type === 'neon') {
+      db.run(sql, params).then(resolve).catch(reject);
+    } else {
+      db.run(sql, params, function(err) {
+        if (err) reject(err);
+        else resolve({ lastID: this.lastID, changes: this.changes });
+      });
+    }
+  });
+};
+
+// Middleware de auditoria LGPD (fire-and-forget, não bloqueia a resposta)
 const auditLog = (req, action, resource, resourceId, details = null) => {
   if (!req.user) return;
   const sql = `INSERT INTO audit_logs (user_id, action, resource, resource_id, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?)`;
@@ -179,8 +271,9 @@ const auditLog = (req, action, resource, resourceId, details = null) => {
     req.ip,
     req.get('user-agent')
   ];
-  db.run(sql, params, (err) => {
-    if (err) logger.error('Erro ao registrar log de auditoria:', err);
+  // Executa sem aguardar (fire-and-forget)
+  dbRun(sql, params).catch((err) => {
+    logger.error('Erro ao registrar log de auditoria:', err);
   });
 };
 
@@ -207,6 +300,8 @@ const cpfValidator = body('cpf')
   .withMessage('CPF deve conter apenas números');
 
 // Serializa a criação do banco de dados para garantir a ordem de execução
+// NOTA: db.serialize() é específico do SQLite - só executar para SQLite
+if (DB_TYPE === 'sqlite' && db) {
 db.serialize(() => {
   // === TABELAS EXISTENTES ===
 
@@ -678,6 +773,7 @@ db.serialize(() => {
       }
   });
 });
+} // Fim do if (DB_TYPE === 'sqlite')
 
 
 // === MIDDLEWARE DE AUTENTICAÇÃO ===
@@ -706,26 +802,24 @@ const authenticateToken = (req, res, next) => {
  * @param {string} userAgent - User agent do cliente
  * @returns {Promise<string>} - O refresh token gerado
  */
-const generateRefreshToken = (userId, ipAddress, userAgent) => {
-  return new Promise((resolve, reject) => {
-    // Gera token aleatório seguro (64 bytes = 128 caracteres hex)
-    const token = crypto.randomBytes(64).toString('hex');
+const generateRefreshToken = async (userId, ipAddress, userAgent) => {
+  // Gera token aleatório seguro (64 bytes = 128 caracteres hex)
+  const token = crypto.randomBytes(64).toString('hex');
 
-    // Refresh token expira em 7 dias
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+  // Refresh token expira em 7 dias
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 7);
 
-    const sql = `INSERT INTO refresh_tokens (user_id, token, expires_at, ip_address, user_agent)
-                 VALUES (?, ?, ?, ?, ?)`;
+  const sql = `INSERT INTO refresh_tokens (user_id, token, expires_at, ip_address, user_agent)
+               VALUES (?, ?, ?, ?, ?)`;
 
-    db.run(sql, [userId, token, expiresAt.toISOString(), ipAddress, userAgent], (err) => {
-      if (err) {
-        logger.error('Erro ao salvar refresh token:', err);
-        return reject(err);
-      }
-      resolve(token);
-    });
-  });
+  try {
+    await dbRun(sql, [userId, token, expiresAt.toISOString(), ipAddress, userAgent]);
+    return token;
+  } catch (err) {
+    logger.error('Erro ao salvar refresh token:', err);
+    throw err;
+  }
 };
 
 /**
@@ -733,28 +827,32 @@ const generateRefreshToken = (userId, ipAddress, userAgent) => {
  * @param {string} token - O refresh token
  * @returns {Promise<object>} - Dados do usuário
  */
-const validateRefreshToken = (token) => {
-  return new Promise((resolve, reject) => {
-    const sql = `
-      SELECT rt.*, u.id, u.cpf, u.name, u.role
-      FROM refresh_tokens rt
-      JOIN users u ON rt.user_id = u.id
-      WHERE rt.token = ?
-        AND rt.revoked = 0
-        AND datetime(rt.expires_at) > datetime('now')
-    `;
+const validateRefreshToken = async (token) => {
+  // SQL compatível com SQLite e Postgres
+  const sql = DB_TYPE === 'sqlite'
+    ? `SELECT rt.*, u.id, u.cpf, u.name, u.role
+       FROM refresh_tokens rt
+       JOIN users u ON rt.user_id = u.id
+       WHERE rt.token = ?
+         AND rt.revoked = 0
+         AND datetime(rt.expires_at) > datetime('now')`
+    : `SELECT rt.*, u.id, u.cpf, u.name, u.role
+       FROM refresh_tokens rt
+       JOIN users u ON rt.user_id = u.id
+       WHERE rt.token = ?
+         AND rt.revoked = FALSE
+         AND rt.expires_at > NOW()`;
 
-    db.get(sql, [token], (err, row) => {
-      if (err) {
-        logger.error('Erro ao validar refresh token:', err);
-        return reject(err);
-      }
-      if (!row) {
-        return reject(new Error('Refresh token inválido ou expirado'));
-      }
-      resolve(row);
-    });
-  });
+  try {
+    const row = await dbGet(sql, [token]);
+    if (!row) {
+      throw new Error('Refresh token inválido ou expirado');
+    }
+    return row;
+  } catch (err) {
+    logger.error('Erro ao validar refresh token:', err);
+    throw err;
+  }
 };
 
 /**
@@ -762,20 +860,17 @@ const validateRefreshToken = (token) => {
  * @param {string} token - O refresh token a ser revogado
  * @returns {Promise<void>}
  */
-const revokeRefreshToken = (token) => {
-  return new Promise((resolve, reject) => {
-    const sql = `UPDATE refresh_tokens
-                 SET revoked = 1, revoked_at = datetime('now')
-                 WHERE token = ?`;
+const revokeRefreshToken = async (token) => {
+  const sql = DB_TYPE === 'sqlite'
+    ? `UPDATE refresh_tokens SET revoked = 1, revoked_at = datetime('now') WHERE token = ?`
+    : `UPDATE refresh_tokens SET revoked = TRUE, revoked_at = NOW() WHERE token = ?`;
 
-    db.run(sql, [token], (err) => {
-      if (err) {
-        logger.error('Erro ao revogar refresh token:', err);
-        return reject(err);
-      }
-      resolve();
-    });
-  });
+  try {
+    await dbRun(sql, [token]);
+  } catch (err) {
+    logger.error('Erro ao revogar refresh token:', err);
+    throw err;
+  }
 };
 
 /**
@@ -783,20 +878,17 @@ const revokeRefreshToken = (token) => {
  * @param {number} userId - ID do usuário
  * @returns {Promise<void>}
  */
-const revokeAllUserTokens = (userId) => {
-  return new Promise((resolve, reject) => {
-    const sql = `UPDATE refresh_tokens
-                 SET revoked = 1, revoked_at = datetime('now')
-                 WHERE user_id = ? AND revoked = 0`;
+const revokeAllUserTokens = async (userId) => {
+  const sql = DB_TYPE === 'sqlite'
+    ? `UPDATE refresh_tokens SET revoked = 1, revoked_at = datetime('now') WHERE user_id = ? AND revoked = 0`
+    : `UPDATE refresh_tokens SET revoked = TRUE, revoked_at = NOW() WHERE user_id = ? AND revoked = FALSE`;
 
-    db.run(sql, [userId], (err) => {
-      if (err) {
-        logger.error('Erro ao revogar todos os tokens do usuário:', err);
-        return reject(err);
-      }
-      resolve();
-    });
-  });
+  try {
+    await dbRun(sql, [userId]);
+  } catch (err) {
+    logger.error('Erro ao revogar todos os tokens do usuário:', err);
+    throw err;
+  }
 };
 
 
@@ -808,12 +900,10 @@ app.post('/api/login', authLimiter, [
 ], validateRequest, async (req, res) => {
   const { cpf, senha } = req.body;
 
-  const sql = "SELECT * FROM users WHERE cpf = ?";
-  db.get(sql, [cpf], async (err, user) => {
-    if (err) {
-      logger.error('Erro no login:', err);
-      return res.status(500).json({ "error": "Erro ao processar requisição." });
-    }
+  try {
+    const sql = "SELECT * FROM users WHERE cpf = ?";
+    const user = await dbGet(sql, [cpf]);
+
     if (!user) {
       return res.status(401).json({ "error": "Credenciais inválidas." });
     }
@@ -831,33 +921,31 @@ app.post('/api/login', authLimiter, [
       { expiresIn: '15m' } // Access token de curta duração
     );
 
-    try {
-      // Gera refresh_token de longa duração (7 dias) e armazena no banco
-      const refresh_token = await generateRefreshToken(
-        user.id,
-        req.ip,
-        req.get('user-agent')
-      );
+    // Gera refresh_token de longa duração (7 dias) e armazena no banco
+    const refresh_token = await generateRefreshToken(
+      user.id,
+      req.ip,
+      req.get('user-agent')
+    );
 
-      logger.info(`Login bem-sucedido para usuário: ${user.name} (${user.cpf})`);
+    logger.info(`Login bem-sucedido para usuário: ${user.name} (${user.cpf})`);
 
-      res.json({
-        access_token,
-        refresh_token,
-        expires_in: 900, // 15 minutos em segundos
-        token_type: 'Bearer',
-        user: {
-          id: user.id,
-          name: user.name,
-          cpf: user.cpf,
-          role: user.role
-        }
-      });
-    } catch (error) {
-      logger.error('Erro ao gerar refresh token:', error);
-      return res.status(500).json({ "error": "Erro ao processar requisição." });
-    }
-  });
+    res.json({
+      access_token,
+      refresh_token,
+      expires_in: 900, // 15 minutos em segundos
+      token_type: 'Bearer',
+      user: {
+        id: user.id,
+        name: user.name,
+        cpf: user.cpf,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    logger.error('Erro no login:', error);
+    return res.status(500).json({ "error": "Erro ao processar requisição." });
+  }
 });
 
 /**
@@ -942,289 +1030,348 @@ app.get('/api/profile', authenticateToken, (req, res) => {
 
 // === ROTAS DE BENEFICIÁRIOS ===
 
-app.get('/api/beneficiaries', authenticateToken, (req, res) => {
-  const { search, bairro, vulnerabilidade } = req.query;
-  let sql = "SELECT * FROM beneficiaries WHERE 1=1";
-  const params = [];
+app.get('/api/beneficiaries', authenticateToken, async (req, res) => {
+  try {
+    const { search, bairro, vulnerabilidade } = req.query;
+    let sql = "SELECT * FROM beneficiaries WHERE 1=1";
+    const params = [];
 
-  if (search) {
-    sql += " AND (name LIKE ? OR cpf LIKE ? OR nis LIKE ?)";
-    params.push(`%${search}%`, `%${search}%`, `%${search}%`);
-  }
-
-  if (bairro) {
-    sql += " AND bairro = ?";
-    params.push(bairro);
-  }
-
-  if (vulnerabilidade) {
-    sql += " AND vulnerabilidade_score >= ?";
-    params.push(parseFloat(vulnerabilidade));
-  }
-
-  sql += " ORDER BY name";
-
-  db.all(sql, params, (err, rows) => {
-    if (err) {
-      res.status(400).json({ "error": err.message });
-      return;
+    if (search) {
+      sql += " AND (name LIKE ? OR cpf LIKE ? OR nis LIKE ?)";
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
+
+    if (bairro) {
+      sql += " AND bairro = ?";
+      params.push(bairro);
+    }
+
+    if (vulnerabilidade) {
+      sql += " AND vulnerabilidade_score >= ?";
+      params.push(parseFloat(vulnerabilidade));
+    }
+
+    sql += " ORDER BY name";
+
+    const rows = await dbAll(sql, params);
     auditLog(req, 'LIST', 'beneficiaries', null);
     res.json({ "message": "success", "data": rows });
-  });
+  } catch (err) {
+    logger.error('Erro ao listar beneficiários:', err);
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.get('/api/beneficiaries/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  const sql = "SELECT * FROM beneficiaries WHERE id = ?";
-  db.get(sql, [id], (err, row) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+app.get('/api/beneficiaries/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const sql = "SELECT * FROM beneficiaries WHERE id = ?";
+    const row = await dbGet(sql, [id]);
     if (row) {
       auditLog(req, 'VIEW', 'beneficiaries', id);
       res.json({ "message": "success", "data": row });
     } else {
       res.status(404).json({ "message": "Beneficiário não encontrado." });
     }
-  });
+  } catch (err) {
+    logger.error('Erro ao buscar beneficiário:', err);
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.post('/api/beneficiaries', authenticateToken, (req, res) => {
-  const { name, cpf, nis, birthDate, address, phone, email, bairro, renda_familiar, membros_familia } = req.body;
-  const sql = `INSERT INTO beneficiaries (name, cpf, nis, birthDate, address, phone, email, bairro, renda_familiar, membros_familia) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-  const params = [name, cpf, nis, birthDate, address, phone, email, bairro, renda_familiar, membros_familia];
-  db.run(sql, params, function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
-    auditLog(req, 'CREATE', 'beneficiaries', this.lastID, { name, cpf });
-    res.status(201).json({ "message": "success", "data": { id: this.lastID, ...req.body } });
-  });
+app.post('/api/beneficiaries', authenticateToken, async (req, res) => {
+  try {
+    const { name, cpf, nis, birthDate, address, phone, email, bairro, renda_familiar, membros_familia } = req.body;
+    // Usar birth_date para Postgres, birthDate para SQLite
+    const dateColumn = DB_TYPE === 'sqlite' ? 'birthDate' : 'birth_date';
+    const sql = `INSERT INTO beneficiaries (name, cpf, nis, ${dateColumn}, address, phone, email, bairro, renda_familiar, membros_familia) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const params = [name, cpf, nis, birthDate, address, phone, email, bairro, renda_familiar, membros_familia];
+    const result = await dbRun(sql, params);
+    auditLog(req, 'CREATE', 'beneficiaries', result.lastID, { name, cpf });
+    res.status(201).json({ "message": "success", "data": { id: result.lastID, ...req.body } });
+  } catch (err) {
+    logger.error('Erro ao criar beneficiário:', err);
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.put('/api/beneficiaries/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  const { name, cpf, nis, birthDate, address, phone, email, bairro, renda_familiar, membros_familia } = req.body;
-  const sql = `UPDATE beneficiaries SET name = ?, cpf = ?, nis = ?, birthDate = ?, address = ?, phone = ?, email = ?, bairro = ?, renda_familiar = ?, membros_familia = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
-  const params = [name, cpf, nis, birthDate, address, phone, email, bairro, renda_familiar, membros_familia, id];
-  db.run(sql, params, function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+app.put('/api/beneficiaries/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, cpf, nis, birthDate, address, phone, email, bairro, renda_familiar, membros_familia } = req.body;
+    const dateColumn = DB_TYPE === 'sqlite' ? 'birthDate' : 'birth_date';
+    const sql = `UPDATE beneficiaries SET name = ?, cpf = ?, nis = ?, ${dateColumn} = ?, address = ?, phone = ?, email = ?, bairro = ?, renda_familiar = ?, membros_familia = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+    const params = [name, cpf, nis, birthDate, address, phone, email, bairro, renda_familiar, membros_familia, id];
+    const result = await dbRun(sql, params);
     auditLog(req, 'UPDATE', 'beneficiaries', id, { name, cpf });
-    res.json({ "message": "success", "data": { id, ...req.body }, "changes": this.changes });
-  });
+    res.json({ "message": "success", "data": { id, ...req.body }, "changes": result.changes });
+  } catch (err) {
+    logger.error('Erro ao atualizar beneficiário:', err);
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.delete('/api/beneficiaries/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  const sql = 'DELETE FROM beneficiaries WHERE id = ?';
-  db.run(sql, id, function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+app.delete('/api/beneficiaries/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const sql = 'DELETE FROM beneficiaries WHERE id = ?';
+    const result = await dbRun(sql, [id]);
     auditLog(req, 'DELETE', 'beneficiaries', id);
-    res.json({ "message": "deleted", "changes": this.changes });
-  });
+    res.json({ "message": "deleted", "changes": result.changes });
+  } catch (err) {
+    logger.error('Erro ao deletar beneficiário:', err);
+    res.status(400).json({ "error": err.message });
+  }
 });
 
 
 // === ROTAS DE PROGRAMAS ===
 
-app.get('/api/programs', authenticateToken, (req, res) => {
-  const sql = "SELECT * FROM programs ORDER BY name";
-  db.all(sql, [], (err, rows) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+app.get('/api/programs', authenticateToken, async (req, res) => {
+  try {
+    const sql = "SELECT * FROM programs ORDER BY name";
+    const rows = await dbAll(sql, []);
     res.json({ "message": "success", "data": rows });
-  });
+  } catch (err) {
+    logger.error('Erro ao listar programas:', err);
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.post('/api/programs', authenticateToken, (req, res) => {
-  const { name, description, eligibility_criteria } = req.body;
-  if (!name) { return res.status(400).json({ "error": "O nome do programa é obrigatório." }); }
-  const sql = `INSERT INTO programs (name, description, eligibility_criteria) VALUES (?, ?, ?)`;
-  db.run(sql, [name, description, eligibility_criteria], function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
-    auditLog(req, 'CREATE', 'programs', this.lastID, { name });
-    res.status(201).json({ "message": "success", "data": { id: this.lastID, name, description, eligibility_criteria } });
-  });
+app.post('/api/programs', authenticateToken, async (req, res) => {
+  try {
+    const { name, description, eligibility_criteria } = req.body;
+    if (!name) { return res.status(400).json({ "error": "O nome do programa é obrigatório." }); }
+    const sql = `INSERT INTO programs (name, description, eligibility_criteria) VALUES (?, ?, ?)`;
+    const result = await dbRun(sql, [name, description, eligibility_criteria]);
+    auditLog(req, 'CREATE', 'programs', result.lastID, { name });
+    res.status(201).json({ "message": "success", "data": { id: result.lastID, name, description, eligibility_criteria } });
+  } catch (err) {
+    logger.error('Erro ao criar programa:', err);
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.put('/api/programs/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  const { name, description, eligibility_criteria } = req.body;
-  if (!name) { return res.status(400).json({ "error": "O nome do programa é obrigatório." }); }
-  const sql = `UPDATE programs SET name = ?, description = ?, eligibility_criteria = ? WHERE id = ?`;
-  db.run(sql, [name, description, eligibility_criteria, id], function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+app.put('/api/programs/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, eligibility_criteria } = req.body;
+    if (!name) { return res.status(400).json({ "error": "O nome do programa é obrigatório." }); }
+    const sql = `UPDATE programs SET name = ?, description = ?, eligibility_criteria = ? WHERE id = ?`;
+    const result = await dbRun(sql, [name, description, eligibility_criteria, id]);
     auditLog(req, 'UPDATE', 'programs', id, { name });
-    res.json({ "message": "success", "data": { id, name, description, eligibility_criteria }, "changes": this.changes });
-  });
+    res.json({ "message": "success", "data": { id, name, description, eligibility_criteria }, "changes": result.changes });
+  } catch (err) {
+    logger.error('Erro ao atualizar programa:', err);
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.delete('/api/programs/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  db.run('DELETE FROM beneficiary_programs WHERE program_id = ?', id, (err) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+app.delete('/api/programs/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await dbRun('DELETE FROM beneficiary_programs WHERE program_id = ?', [id]);
     const sql = 'DELETE FROM programs WHERE id = ?';
-    db.run(sql, id, function(err) {
-      if (err) { res.status(400).json({ "error": err.message }); return; }
-      auditLog(req, 'DELETE', 'programs', id);
-      res.json({ "message": "deleted", "changes": this.changes });
-    });
-  });
+    const result = await dbRun(sql, [id]);
+    auditLog(req, 'DELETE', 'programs', id);
+    res.json({ "message": "deleted", "changes": result.changes });
+  } catch (err) {
+    logger.error('Erro ao deletar programa:', err);
+    res.status(400).json({ "error": err.message });
+  }
 });
 
 
 // === ROTAS DE ASSOCIAÇÃO BENEFICIÁRIO-PROGRAMA ===
 
-app.get('/api/beneficiaries/:id/programs', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  const sql = `SELECT p.id, p.name, p.description, bp.enrollment_date, bp.status FROM programs p JOIN beneficiary_programs bp ON p.id = bp.program_id WHERE bp.beneficiary_id = ?`;
-  db.all(sql, [id], (err, rows) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+app.get('/api/beneficiaries/:id/programs', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const sql = `SELECT p.id, p.name, p.description, bp.enrollment_date, bp.status FROM programs p JOIN beneficiary_programs bp ON p.id = bp.program_id WHERE bp.beneficiary_id = ?`;
+    const rows = await dbAll(sql, [id]);
     res.json({ "message": "success", "data": rows });
-  });
+  } catch (err) {
+    logger.error('Erro ao listar programas do beneficiário:', err);
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.post('/api/beneficiaries/:id/programs', authenticateToken, (req, res) => {
-  const { id: beneficiary_id } = req.params;
-  const { program_id } = req.body;
-  const sql = `INSERT INTO beneficiary_programs (beneficiary_id, program_id) VALUES (?, ?)`;
-  db.run(sql, [beneficiary_id, program_id], function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+app.post('/api/beneficiaries/:id/programs', authenticateToken, async (req, res) => {
+  try {
+    const { id: beneficiary_id } = req.params;
+    const { program_id } = req.body;
+    const sql = `INSERT INTO beneficiary_programs (beneficiary_id, program_id) VALUES (?, ?)`;
+    await dbRun(sql, [beneficiary_id, program_id]);
     auditLog(req, 'ENROLL', 'beneficiary_programs', null, { beneficiary_id, program_id });
     res.status(201).json({ "message": "success" });
-  });
+  } catch (err) {
+    logger.error('Erro ao associar beneficiário ao programa:', err);
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.delete('/api/beneficiaries/:beneficiary_id/programs/:program_id', authenticateToken, (req, res) => {
-  const { beneficiary_id, program_id } = req.params;
-  const sql = 'DELETE FROM beneficiary_programs WHERE beneficiary_id = ? AND program_id = ?';
-  db.run(sql, [beneficiary_id, program_id], function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+app.delete('/api/beneficiaries/:beneficiary_id/programs/:program_id', authenticateToken, async (req, res) => {
+  try {
+    const { beneficiary_id, program_id } = req.params;
+    const sql = 'DELETE FROM beneficiary_programs WHERE beneficiary_id = ? AND program_id = ?';
+    const result = await dbRun(sql, [beneficiary_id, program_id]);
     auditLog(req, 'UNENROLL', 'beneficiary_programs', null, { beneficiary_id, program_id });
-    res.json({ "message": "deleted", "changes": this.changes });
-  });
+    res.json({ "message": "deleted", "changes": result.changes });
+  } catch (err) {
+    logger.error('Erro ao desassociar beneficiário do programa:', err);
+    res.status(400).json({ "error": err.message });
+  }
 });
 
 
 // === ROTAS DE NOTÍCIAS ===
 
-app.get('/api/news', (req, res) => {
-  const sql = "SELECT * FROM news ORDER BY createdAt DESC";
-  db.all(sql, [], (err, rows) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+app.get('/api/news', async (req, res) => {
+  try {
+    // SQLite usa createdAt, Postgres usa created_at
+    const orderColumn = DB_TYPE === 'sqlite' ? 'createdAt' : 'created_at';
+    const sql = `SELECT * FROM news ORDER BY ${orderColumn} DESC`;
+    const rows = await dbAll(sql, []);
     res.json({ "message": "success", "data": rows });
-  });
+  } catch (err) {
+    logger.error('Erro ao buscar notícias:', err);
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.post('/api/news', authenticateToken, (req, res) => {
-  const { title, content, category } = req.body;
-  const author = req.user.name;
-  const sql = `INSERT INTO news (title, content, author, category) VALUES (?, ?, ?, ?)`;
-  db.run(sql, [title, content, author, category], function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
-    auditLog(req, 'CREATE', 'news', this.lastID, { title });
-    res.status(201).json({ "message": "success", "data": { id: this.lastID, title, content, author, category } });
-  });
+app.post('/api/news', authenticateToken, async (req, res) => {
+  try {
+    const { title, content, category } = req.body;
+    const author = req.user.name;
+    const sql = `INSERT INTO news (title, content, author, category) VALUES (?, ?, ?, ?)`;
+    const result = await dbRun(sql, [title, content, author, category]);
+    auditLog(req, 'CREATE', 'news', result.lastID, { title });
+    res.status(201).json({ "message": "success", "data": { id: result.lastID, title, content, author, category } });
+  } catch (err) {
+    logger.error('Erro ao criar notícia:', err);
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.delete('/api/news/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  const sql = 'DELETE FROM news WHERE id = ?';
-  db.run(sql, id, function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+app.delete('/api/news/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const sql = 'DELETE FROM news WHERE id = ?';
+    const result = await dbRun(sql, [id]);
     auditLog(req, 'DELETE', 'news', id);
-    res.json({ "message": "deleted", "changes": this.changes });
-  });
+    res.json({ "message": "deleted", "changes": result.changes });
+  } catch (err) {
+    logger.error('Erro ao deletar notícia:', err);
+    res.status(400).json({ "error": err.message });
+  }
 });
 
 
 // === ROTAS DE AGENDAMENTOS ===
 
-app.get('/api/appointments', authenticateToken, (req, res) => {
-  const { server_id, beneficiary_id, status } = req.query;
-  let sql = `
-    SELECT a.*, b.name as beneficiary_name, b.cpf as beneficiary_cpf
-    FROM appointments a
-    JOIN beneficiaries b ON a.beneficiary_id = b.id
-    WHERE 1=1
-  `;
-  const params = [];
+app.get('/api/appointments', authenticateToken, async (req, res) => {
+  try {
+    const { server_id, beneficiary_id, status } = req.query;
+    // SQLite usa createdAt, Postgres usa created_at
+    const createdAtCol = DB_TYPE === 'sqlite' ? 'createdAt' : 'created_at';
+    let sql = `
+      SELECT a.*, b.name as beneficiary_name, b.cpf as beneficiary_cpf
+      FROM appointments a
+      JOIN beneficiaries b ON a.beneficiary_id = b.id
+      WHERE 1=1
+    `;
+    const params = [];
 
-  if (server_id) {
-    sql += ' AND a.server_id = ?';
-    params.push(server_id);
-  }
-  if (beneficiary_id) {
-    sql += ' AND a.beneficiary_id = ?';
-    params.push(beneficiary_id);
-  }
-  if (status) {
-    sql += ' AND a.status = ?';
-    params.push(status);
-  }
+    if (server_id) {
+      sql += ' AND a.server_id = ?';
+      params.push(server_id);
+    }
+    if (beneficiary_id) {
+      sql += ' AND a.beneficiary_id = ?';
+      params.push(beneficiary_id);
+    }
+    if (status) {
+      sql += ' AND a.status = ?';
+      params.push(status);
+    }
 
-  sql += ' ORDER BY a.createdAt DESC';
+    sql += ` ORDER BY a.${createdAtCol} DESC`;
 
-  db.all(sql, params, (err, rows) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+    const rows = await dbAll(sql, params);
     res.json({ "message": "success", "data": rows });
-  });
+  } catch (err) {
+    logger.error('Erro ao listar agendamentos:', err);
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.get('/api/beneficiaries/:id/appointments', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  const sql = `SELECT * FROM appointments WHERE beneficiary_id = ? ORDER BY createdAt DESC`;
-  db.all(sql, [id], (err, rows) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+app.get('/api/beneficiaries/:id/appointments', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const createdAtCol = DB_TYPE === 'sqlite' ? 'createdAt' : 'created_at';
+    const sql = `SELECT * FROM appointments WHERE beneficiary_id = ? ORDER BY ${createdAtCol} DESC`;
+    const rows = await dbAll(sql, [id]);
     res.json({ "message": "success", "data": rows });
-  });
+  } catch (err) {
+    logger.error('Erro ao listar agendamentos do beneficiário:', err);
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.post('/api/appointments', authenticateToken, (req, res) => {
-  const { beneficiary_id, title, description, priority, scheduled_date } = req.body;
-  const server_id = req.user.id;
-  const sql = `INSERT INTO appointments (beneficiary_id, server_id, title, description, priority, scheduled_date) VALUES (?, ?, ?, ?, ?, ?)`;
-  const params = [beneficiary_id, server_id, title, description, priority, scheduled_date];
-  db.run(sql, params, function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
-    const newAppointmentId = this.lastID;
+app.post('/api/appointments', authenticateToken, async (req, res) => {
+  try {
+    const { beneficiary_id, title, description, priority, scheduled_date } = req.body;
+    const server_id = req.user.id;
+    const sql = `INSERT INTO appointments (beneficiary_id, server_id, title, description, priority, scheduled_date) VALUES (?, ?, ?, ?, ?, ?)`;
+    const params = [beneficiary_id, server_id, title, description, priority, scheduled_date];
+    const result = await dbRun(sql, params);
+    const newAppointmentId = result.lastID;
     auditLog(req, 'CREATE', 'appointments', newAppointmentId, { beneficiary_id, title });
-    db.get("SELECT * FROM appointments WHERE id = ?", [newAppointmentId], (err, row) => {
-        if (err) { res.status(400).json({ "error": err.message }); return; }
-        res.status(201).json({ "message": "success", "data": row });
-    });
-  });
+    const row = await dbGet("SELECT * FROM appointments WHERE id = ?", [newAppointmentId]);
+    res.status(201).json({ "message": "success", "data": row });
+  } catch (err) {
+    logger.error('Erro ao criar agendamento:', err);
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.put('/api/appointments/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  const { title, description, priority, status, scheduled_date } = req.body;
-  const fields = [], params = [];
+app.put('/api/appointments/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, priority, status, scheduled_date } = req.body;
+    const fields = [], params = [];
 
-  if (title !== undefined) { fields.push("title = ?"); params.push(title); }
-  if (description !== undefined) { fields.push("description = ?"); params.push(description); }
-  if (priority !== undefined) { fields.push("priority = ?"); params.push(priority); }
-  if (status !== undefined) { fields.push("status = ?"); params.push(status); }
-  if (scheduled_date !== undefined) { fields.push("scheduled_date = ?"); params.push(scheduled_date); }
+    if (title !== undefined) { fields.push("title = ?"); params.push(title); }
+    if (description !== undefined) { fields.push("description = ?"); params.push(description); }
+    if (priority !== undefined) { fields.push("priority = ?"); params.push(priority); }
+    if (status !== undefined) { fields.push("status = ?"); params.push(status); }
+    if (scheduled_date !== undefined) { fields.push("scheduled_date = ?"); params.push(scheduled_date); }
 
-  if (fields.length === 0) { return res.status(400).json({ "error": "Nenhum campo para atualizar fornecido." }); }
-  params.push(id);
+    if (fields.length === 0) { return res.status(400).json({ "error": "Nenhum campo para atualizar fornecido." }); }
+    params.push(id);
 
-  const sql = `UPDATE appointments SET ${fields.join(', ')} WHERE id = ?`;
-  db.run(sql, params, function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+    const sql = `UPDATE appointments SET ${fields.join(', ')} WHERE id = ?`;
+    const result = await dbRun(sql, params);
     auditLog(req, 'UPDATE', 'appointments', id, { status, title });
-    db.get("SELECT * FROM appointments WHERE id = ?", [id], (err, row) => {
-        if (err) { res.status(400).json({ "error": err.message }); return; }
-        res.json({ "message": "success", "data": row, "changes": this.changes });
-    });
-  });
+    const row = await dbGet("SELECT * FROM appointments WHERE id = ?", [id]);
+    res.json({ "message": "success", "data": row, "changes": result.changes });
+  } catch (err) {
+    logger.error('Erro ao atualizar agendamento:', err);
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.delete('/api/appointments/:id', authenticateToken, (req, res) => {
+app.delete('/api/appointments/:id', authenticateToken, async (req, res) => {
+  try {
     const { id } = req.params;
     const sql = 'DELETE FROM appointments WHERE id = ?';
-    db.run(sql, id, function(err) {
-        if (err) { res.status(400).json({ "error": err.message }); return; }
-        auditLog(req, 'DELETE', 'appointments', id);
-        res.json({ "message": "deleted", "changes": this.changes });
-    });
+    const result = await dbRun(sql, [id]);
+    auditLog(req, 'DELETE', 'appointments', id);
+    res.json({ "message": "deleted", "changes": result.changes });
+  } catch (err) {
+    logger.error('Erro ao deletar agendamento:', err);
+    res.status(400).json({ "error": err.message });
+  }
 });
 
 
