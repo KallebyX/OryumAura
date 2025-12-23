@@ -18,7 +18,7 @@ const CRASManagementPage: React.FC = () => {
           onClick={() => setActiveTab('visits')}
           className={`pb-3 px-4 font-semibold transition-colors flex items-center gap-2 ${
             activeTab === 'visits'
-              ? 'border-b-2 border-prefeitura-verde text-prefeitura-verde'
+              ? 'border-b-2 border-green-600 text-green-600'
               : 'text-gray-500 hover:text-gray-700'
           }`}
         >
@@ -29,7 +29,7 @@ const CRASManagementPage: React.FC = () => {
           onClick={() => setActiveTab('paif')}
           className={`pb-3 px-4 font-semibold transition-colors flex items-center gap-2 ${
             activeTab === 'paif'
-              ? 'border-b-2 border-prefeitura-verde text-prefeitura-verde'
+              ? 'border-b-2 border-green-600 text-green-600'
               : 'text-gray-500 hover:text-gray-700'
           }`}
         >
@@ -40,7 +40,7 @@ const CRASManagementPage: React.FC = () => {
           onClick={() => setActiveTab('scfv')}
           className={`pb-3 px-4 font-semibold transition-colors flex items-center gap-2 ${
             activeTab === 'scfv'
-              ? 'border-b-2 border-prefeitura-verde text-prefeitura-verde'
+              ? 'border-b-2 border-green-600 text-green-600'
               : 'text-gray-500 hover:text-gray-700'
           }`}
         >
@@ -148,7 +148,7 @@ const HomeVisitsTab: React.FC = () => {
         <h2 className="text-xl font-semibold text-gray-800">Visitas Domiciliares</h2>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="bg-prefeitura-verde hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
+          className="bg-green-600 hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
         >
           {showForm ? <X size={20} /> : <Plus size={20} />}
           {showForm ? 'Cancelar' : 'Nova Visita'}
@@ -165,7 +165,7 @@ const HomeVisitsTab: React.FC = () => {
               <select
                 value={formData.beneficiary_id}
                 onChange={(e) => setFormData({ ...formData, beneficiary_id: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 required
               >
                 <option value="">Selecione um beneficiário</option>
@@ -183,7 +183,7 @@ const HomeVisitsTab: React.FC = () => {
                 type="datetime-local"
                 value={formData.visit_date}
                 onChange={(e) => setFormData({ ...formData, visit_date: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 required
               />
             </div>
@@ -196,7 +196,7 @@ const HomeVisitsTab: React.FC = () => {
                 type="text"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 required
               />
             </div>
@@ -210,7 +210,7 @@ const HomeVisitsTab: React.FC = () => {
                 step="any"
                 value={formData.latitude}
                 onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 placeholder="-30.5091"
               />
             </div>
@@ -224,7 +224,7 @@ const HomeVisitsTab: React.FC = () => {
                 step="any"
                 value={formData.longitude}
                 onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 placeholder="-53.4912"
               />
             </div>
@@ -236,7 +236,7 @@ const HomeVisitsTab: React.FC = () => {
               <textarea
                 value={formData.family_composition}
                 onChange={(e) => setFormData({ ...formData, family_composition: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 rows={2}
               />
             </div>
@@ -248,7 +248,7 @@ const HomeVisitsTab: React.FC = () => {
               <textarea
                 value={formData.housing_conditions}
                 onChange={(e) => setFormData({ ...formData, housing_conditions: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 rows={2}
               />
             </div>
@@ -260,7 +260,7 @@ const HomeVisitsTab: React.FC = () => {
               <textarea
                 value={formData.sanitation}
                 onChange={(e) => setFormData({ ...formData, sanitation: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 rows={2}
               />
             </div>
@@ -272,7 +272,7 @@ const HomeVisitsTab: React.FC = () => {
               <textarea
                 value={formData.vulnerabilities}
                 onChange={(e) => setFormData({ ...formData, vulnerabilities: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 rows={2}
               />
             </div>
@@ -284,7 +284,7 @@ const HomeVisitsTab: React.FC = () => {
               <textarea
                 value={formData.observations}
                 onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 rows={3}
               />
             </div>
@@ -293,7 +293,7 @@ const HomeVisitsTab: React.FC = () => {
           <div className="mt-4 flex gap-3">
             <button
               type="submit"
-              className="bg-prefeitura-verde hover:opacity-90 text-white font-bold py-2 px-6 rounded-lg"
+              className="bg-green-600 hover:opacity-90 text-white font-bold py-2 px-6 rounded-lg"
             >
               Registrar Visita
             </button>
@@ -418,7 +418,7 @@ const PAIFActivitiesTab: React.FC = () => {
         <h2 className="text-xl font-semibold text-gray-800">Atividades PAIF</h2>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="bg-prefeitura-verde hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
+          className="bg-green-600 hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
         >
           {showForm ? <X size={20} /> : <Plus size={20} />}
           {showForm ? 'Cancelar' : 'Nova Atividade'}
@@ -436,7 +436,7 @@ const PAIFActivitiesTab: React.FC = () => {
                 type="text"
                 value={formData.activity_name}
                 onChange={(e) => setFormData({ ...formData, activity_name: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 required
               />
             </div>
@@ -448,7 +448,7 @@ const PAIFActivitiesTab: React.FC = () => {
               <select
                 value={formData.activity_type}
                 onChange={(e) => setFormData({ ...formData, activity_type: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 required
               >
                 <option value="Oficina">Oficina</option>
@@ -466,7 +466,7 @@ const PAIFActivitiesTab: React.FC = () => {
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 rows={3}
               />
             </div>
@@ -479,7 +479,7 @@ const PAIFActivitiesTab: React.FC = () => {
                 type="date"
                 value={formData.start_date}
                 onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 required
               />
             </div>
@@ -492,7 +492,7 @@ const PAIFActivitiesTab: React.FC = () => {
                 type="date"
                 value={formData.end_date}
                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
               />
             </div>
 
@@ -504,7 +504,7 @@ const PAIFActivitiesTab: React.FC = () => {
                 type="text"
                 value={formData.target_audience}
                 onChange={(e) => setFormData({ ...formData, target_audience: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 placeholder="Ex: Famílias em vulnerabilidade"
               />
             </div>
@@ -517,7 +517,7 @@ const PAIFActivitiesTab: React.FC = () => {
                 type="text"
                 value={formData.facilitator}
                 onChange={(e) => setFormData({ ...formData, facilitator: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
               />
             </div>
 
@@ -529,7 +529,7 @@ const PAIFActivitiesTab: React.FC = () => {
                 type="text"
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
               />
             </div>
           </div>
@@ -537,7 +537,7 @@ const PAIFActivitiesTab: React.FC = () => {
           <div className="mt-4 flex gap-3">
             <button
               type="submit"
-              className="bg-prefeitura-verde hover:opacity-90 text-white font-bold py-2 px-6 rounded-lg"
+              className="bg-green-600 hover:opacity-90 text-white font-bold py-2 px-6 rounded-lg"
             >
               Criar Atividade
             </button>
@@ -557,7 +557,7 @@ const PAIFActivitiesTab: React.FC = () => {
           activities.map((activity) => (
             <div key={activity.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
               <h3 className="font-semibold text-lg text-gray-800 mb-2">{activity.activity_name}</h3>
-              <span className="inline-block bg-prefeitura-verde text-white text-xs px-2 py-1 rounded mb-2">
+              <span className="inline-block bg-green-600 text-white text-xs px-2 py-1 rounded mb-2">
                 {activity.activity_type}
               </span>
               {activity.description && (
@@ -663,7 +663,7 @@ const SCFVTab: React.FC = () => {
         </h2>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="bg-prefeitura-verde hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
+          className="bg-green-600 hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
         >
           {showForm ? <X size={20} /> : <Plus size={20} />}
           {showForm ? 'Cancelar' : 'Nova Inscrição'}
@@ -680,7 +680,7 @@ const SCFVTab: React.FC = () => {
               <select
                 value={formData.beneficiary_id}
                 onChange={(e) => setFormData({ ...formData, beneficiary_id: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 required
               >
                 <option value="">Selecione um beneficiário</option>
@@ -697,7 +697,7 @@ const SCFVTab: React.FC = () => {
               <select
                 value={formData.age_group}
                 onChange={(e) => setFormData({ ...formData, age_group: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 required
               >
                 <option value="0-6 anos">0-6 anos</option>
@@ -716,7 +716,7 @@ const SCFVTab: React.FC = () => {
                 type="date"
                 value={formData.enrollment_date}
                 onChange={(e) => setFormData({ ...formData, enrollment_date: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 required
               />
             </div>
@@ -729,7 +729,7 @@ const SCFVTab: React.FC = () => {
                 type="text"
                 value={formData.modality}
                 onChange={(e) => setFormData({ ...formData, modality: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 placeholder="Ex: Grupos de Convivência"
               />
             </div>
@@ -741,7 +741,7 @@ const SCFVTab: React.FC = () => {
               <textarea
                 value={formData.observations}
                 onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 rows={3}
               />
             </div>
@@ -750,7 +750,7 @@ const SCFVTab: React.FC = () => {
           <div className="mt-4 flex gap-3">
             <button
               type="submit"
-              className="bg-prefeitura-verde hover:opacity-90 text-white font-bold py-2 px-6 rounded-lg"
+              className="bg-green-600 hover:opacity-90 text-white font-bold py-2 px-6 rounded-lg"
             >
               Realizar Inscrição
             </button>

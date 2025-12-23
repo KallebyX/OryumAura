@@ -63,7 +63,7 @@ const Avatar: React.FC<AvatarProps> = ({
       <motion.div
         whileHover={onClick ? { scale: 1.05 } : {}}
         whileTap={onClick ? { scale: 0.95 } : {}}
-        className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gradient-to-br from-prefeitura-verde to-green-600 flex items-center justify-center text-white font-semibold ${
+        className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gradient-to-br from-green-600 to-green-600 flex items-center justify-center text-white font-semibold ${
           onClick ? 'cursor-pointer' : ''
         } ring-2 ring-white shadow-lg`}
         onClick={onClick}

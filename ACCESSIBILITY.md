@@ -109,7 +109,7 @@ O OryumAura foi desenvolvido para ser utilizável por TODOS os cidadãos, inclui
 .focus-ring {
   @apply focus:outline-none
          focus:ring-2
-         focus:ring-prefeitura-verde
+         focus:ring-green-600
          focus:ring-offset-2
          dark:focus:ring-green-500;
 }

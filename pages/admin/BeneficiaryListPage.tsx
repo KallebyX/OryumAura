@@ -37,7 +37,7 @@ const BeneficiaryListPage: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Gestão de Beneficiários</h1>
         {/* O botão para novo beneficiário pode ser implementado no futuro */}
-        {/* <Link to="/admin/beneficiaries/new" className="bg-prefeitura-verde hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg">
+        {/* <Link to="/admin/beneficiaries/new" className="bg-green-600 hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg">
           Novo Beneficiário
         </Link> */}
       </div>
@@ -48,7 +48,7 @@ const BeneficiaryListPage: React.FC = () => {
           placeholder="Buscar por nome ou CPF..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-prefeitura-amarelo"
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
         />
       </div>
 
@@ -74,7 +74,7 @@ const BeneficiaryListPage: React.FC = () => {
                   <td className="py-3 px-4">{beneficiary.cpf}</td>
                   <td className="py-3 px-4">{beneficiary.nis || 'N/A'}</td>
                   <td className="py-3 px-4">
-                    <Link to={`/admin/beneficiaries/${beneficiary.id}`} className="text-prefeitura-verde hover:underline">
+                    <Link to={`/admin/beneficiaries/${beneficiary.id}`} className="text-green-600 hover:underline">
                       Ver Perfil
                     </Link>
                   </td>

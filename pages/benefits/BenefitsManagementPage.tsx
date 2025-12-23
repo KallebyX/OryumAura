@@ -148,12 +148,12 @@ const BenefitsManagementPage: React.FC = () => {
     <div className="bg-white p-8 rounded-lg shadow-md animate-slide-in">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-          <Gift size={32} className="text-prefeitura-verde" />
+          <Gift size={32} className="text-green-600" />
           Gestão de Benefícios Eventuais
         </h1>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="bg-prefeitura-verde hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
+          className="bg-green-600 hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
         >
           {showForm ? <X size={20} /> : <Plus size={20} />}
           {showForm ? 'Cancelar' : 'Nova Solicitação'}
@@ -196,7 +196,7 @@ const BenefitsManagementPage: React.FC = () => {
             onClick={() => setFilterStatus(status)}
             className={`px-4 py-2 rounded-t-lg whitespace-nowrap transition-colors ${
               filterStatus === status
-                ? 'bg-prefeitura-verde text-white'
+                ? 'bg-green-600 text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -207,7 +207,7 @@ const BenefitsManagementPage: React.FC = () => {
 
       {/* New Benefit Form */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-gray-50 p-6 rounded-lg mb-6 border-l-4 border-prefeitura-verde">
+        <form onSubmit={handleSubmit} className="bg-gray-50 p-6 rounded-lg mb-6 border-l-4 border-green-600">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Nova Solicitação de Benefício</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -218,7 +218,7 @@ const BenefitsManagementPage: React.FC = () => {
               <select
                 value={formData.beneficiary_id}
                 onChange={(e) => setFormData({ ...formData, beneficiary_id: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 required
               >
                 <option value="">Selecione um beneficiário</option>
@@ -235,7 +235,7 @@ const BenefitsManagementPage: React.FC = () => {
               <select
                 value={formData.benefit_type}
                 onChange={(e) => setFormData({ ...formData, benefit_type: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 required
               >
                 <option value="Cesta Básica">Cesta Básica</option>
@@ -256,7 +256,7 @@ const BenefitsManagementPage: React.FC = () => {
                 type="date"
                 value={formData.request_date}
                 onChange={(e) => setFormData({ ...formData, request_date: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 required
               />
             </div>
@@ -270,7 +270,7 @@ const BenefitsManagementPage: React.FC = () => {
                 min="1"
                 value={formData.quantity}
                 onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
               />
             </div>
 
@@ -281,7 +281,7 @@ const BenefitsManagementPage: React.FC = () => {
               <textarea
                 value={formData.justification}
                 onChange={(e) => setFormData({ ...formData, justification: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 rows={3}
                 required
                 placeholder="Descreva a situação e a necessidade do benefício..."
@@ -295,7 +295,7 @@ const BenefitsManagementPage: React.FC = () => {
               <textarea
                 value={formData.observations}
                 onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
                 rows={2}
               />
             </div>
@@ -304,7 +304,7 @@ const BenefitsManagementPage: React.FC = () => {
           <div className="mt-4 flex gap-3">
             <button
               type="submit"
-              className="bg-prefeitura-verde hover:opacity-90 text-white font-bold py-2 px-6 rounded-lg"
+              className="bg-green-600 hover:opacity-90 text-white font-bold py-2 px-6 rounded-lg"
             >
               Registrar Solicitação
             </button>

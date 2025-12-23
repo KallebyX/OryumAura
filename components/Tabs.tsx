@@ -50,7 +50,7 @@ const Tabs: React.FC<TabsProps> = ({
                   px-4 py-2 rounded-lg font-semibold transition-all
                   flex items-center gap-2
                   ${isActive
-                    ? 'bg-gradient-to-r from-prefeitura-verde to-green-600 text-white shadow-lg'
+                    ? 'bg-gradient-to-r from-green-600 to-green-600 text-white shadow-lg'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }
                   ${tab.disabled ? 'opacity-50 cursor-not-allowed' : ''}
@@ -72,7 +72,7 @@ const Tabs: React.FC<TabsProps> = ({
                 className={`
                   relative px-4 py-3 font-semibold transition-colors
                   flex items-center gap-2
-                  ${isActive ? 'text-prefeitura-verde' : 'text-gray-600 hover:text-gray-900'}
+                  ${isActive ? 'text-green-600' : 'text-gray-600 hover:text-gray-900'}
                   ${tab.disabled ? 'opacity-50 cursor-not-allowed' : ''}
                 `}
               >
@@ -81,7 +81,7 @@ const Tabs: React.FC<TabsProps> = ({
                 {isActive && (
                   <motion.div
                     layoutId="activeTabIndicator"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-prefeitura-verde"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600"
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
                   />
                 )}
@@ -101,7 +101,7 @@ const Tabs: React.FC<TabsProps> = ({
                 px-4 py-2 rounded-t-lg font-semibold transition-all
                 flex items-center gap-2 border-b-2
                 ${isActive
-                  ? 'bg-white text-prefeitura-verde border-prefeitura-verde'
+                  ? 'bg-white text-green-600 border-green-600'
                   : 'bg-gray-100 text-gray-700 border-transparent hover:bg-gray-200'
                 }
                 ${tab.disabled ? 'opacity-50 cursor-not-allowed' : ''}

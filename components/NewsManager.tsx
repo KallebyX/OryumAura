@@ -35,7 +35,7 @@ const NewsManager: React.FC = () => {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-prefeitura-verde focus:border-prefeitura-verde"
+            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-600 focus:border-green-600"
           />
         </div>
         <div>
@@ -45,7 +45,7 @@ const NewsManager: React.FC = () => {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={5}
-            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-prefeitura-verde focus:border-prefeitura-verde"
+            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-600 focus:border-green-600"
           />
         </div>
         <div className="text-right">

@@ -89,7 +89,7 @@ const StatsPage: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <BarChart3 className="animate-pulse mx-auto mb-4 text-prefeitura-verde" size={48} />
+          <BarChart3 className="animate-pulse mx-auto mb-4 text-green-600" size={48} />
           <p className="text-gray-600">Carregando estatísticas...</p>
         </div>
       </div>
@@ -103,7 +103,7 @@ const StatsPage: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-              <BarChart3 size={32} className="text-prefeitura-verde" />
+              <BarChart3 size={32} className="text-green-600" />
               Estatísticas Avançadas
             </h1>
             <p className="text-gray-600 mt-1">
@@ -115,7 +115,7 @@ const StatsPage: React.FC = () => {
             <select
               value={period}
               onChange={(e) => setPeriod(e.target.value as any)}
-              className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+              className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
             >
               <option value="week">Última Semana</option>
               <option value="month">Último Mês</option>
@@ -123,7 +123,7 @@ const StatsPage: React.FC = () => {
             </select>
 
             <button
-              className="bg-prefeitura-verde hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
+              className="bg-green-600 hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
               onClick={() => addToast('Exportando relatório...', 'info')}
             >
               <Download size={20} />
@@ -177,7 +177,7 @@ const StatsPage: React.FC = () => {
         {/* Monthly Trends */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <TrendingUp size={20} className="text-prefeitura-verde" />
+            <TrendingUp size={20} className="text-green-600" />
             Tendências Mensais
           </h3>
           <ResponsiveContainer width="100%" height={300}>

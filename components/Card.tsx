@@ -31,7 +31,8 @@ const Card: React.FC<CardProps> = ({
       whileTap={clickable ? { scale: 0.98 } : {}}
       onClick={onClick}
       className={`
-        bg-white rounded-xl shadow-sm border border-gray-200
+        bg-white dark:bg-gray-800 rounded-xl shadow-sm
+        border border-gray-200 dark:border-gray-700
         ${paddingClasses[padding]}
         ${hoverable || clickable ? 'cursor-pointer transition-shadow hover:shadow-lg' : ''}
         ${className}
@@ -52,8 +53,8 @@ export const CardHeader: React.FC<CardHeaderProps> = ({ title, subtitle, action 
   return (
     <div className="flex items-start justify-between mb-4">
       <div>
-        <h3 className="text-lg font-bold text-gray-900">{title}</h3>
-        {subtitle && <p className="text-sm text-gray-600 mt-1">{subtitle}</p>}
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{title}</h3>
+        {subtitle && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{subtitle}</p>}
       </div>
       {action && <div>{action}</div>}
     </div>
@@ -65,7 +66,7 @@ interface CardContentProps {
 }
 
 export const CardContent: React.FC<CardContentProps> = ({ children }) => {
-  return <div className="text-gray-700">{children}</div>;
+  return <div className="text-gray-700 dark:text-gray-300">{children}</div>;
 };
 
 interface CardFooterProps {
@@ -75,7 +76,7 @@ interface CardFooterProps {
 
 export const CardFooter: React.FC<CardFooterProps> = ({ children, className = '' }) => {
   return (
-    <div className={`mt-4 pt-4 border-t border-gray-200 ${className}`}>
+    <div className={`mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 ${className}`}>
       {children}
     </div>
   );

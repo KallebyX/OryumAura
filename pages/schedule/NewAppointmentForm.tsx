@@ -88,7 +88,7 @@ const NewAppointmentForm: React.FC<NewAppointmentFormProps> = ({ onAppointmentCr
         {errors.reason && <p className="text-red-500 text-xs mt-1">{errors.reason.message}</p>}
       </div>
 
-      <button type="submit" disabled={loading} className="w-full bg-prefeitura-verde hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg disabled:bg-gray-400">
+      <button type="submit" disabled={loading} className="w-full bg-green-600 hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg disabled:bg-gray-400">
         {loading ? 'Salvando...' : 'Salvar Agendamento'}
       </button>
     </form>

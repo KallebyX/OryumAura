@@ -94,7 +94,7 @@ const Dropdown: React.FC<DropdownProps> = ({
                       )}
                       <span className="flex-1">{option.label}</span>
                       {selectedValue === option.value && (
-                        <Check size={18} className="text-prefeitura-verde" />
+                        <Check size={18} className="text-green-600" />
                       )}
                     </motion.button>
                   )}

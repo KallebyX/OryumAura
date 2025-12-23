@@ -40,7 +40,7 @@ const NewsPage: React.FC = () => {
               className="bg-white p-6 rounded-lg shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
               onClick={() => navigate(`/news/${item.id}`)}
             >
-              <h2 className="text-2xl font-bold text-prefeitura-verde mb-2">{item.title}</h2>
+              <h2 className="text-2xl font-bold text-green-600 mb-2">{item.title}</h2>
               <p className="text-gray-600 truncate">{item.content}</p>
               <p className="text-sm text-gray-500 mt-4">{new Date(item.createdAt).toLocaleDateString('pt-BR')}</p>
             </div>

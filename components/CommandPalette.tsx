@@ -126,21 +126,21 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -20 }}
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-200"
+            className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-200 dark:border-gray-700"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Search Input */}
-            <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-200">
-              <Search className="text-gray-400 flex-shrink-0" size={20} />
+            <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-200 dark:border-gray-700">
+              <Search className="text-gray-400 dark:text-gray-500 flex-shrink-0" size={20} />
               <input
                 type="text"
                 placeholder={placeholder}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 autoFocus
-                className="flex-1 bg-transparent outline-none text-lg placeholder-gray-400"
+                className="flex-1 bg-transparent outline-none text-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
               />
-              <kbd className="hidden sm:block px-2 py-1 text-xs font-semibold text-gray-500 bg-gray-100 border border-gray-200 rounded">
+              <kbd className="hidden sm:block px-2 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded">
                 Esc
               </kbd>
             </div>
@@ -148,13 +148,13 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
             {/* Results */}
             <div className="max-h-[60vh] overflow-y-auto">
               {filteredItems.length === 0 ? (
-                <div className="px-4 py-12 text-center text-gray-500">
+                <div className="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
                   Nenhum resultado encontrado
                 </div>
               ) : (
                 Object.entries(groupedItems).map(([section, sectionItems]) => (
                   <div key={section}>
-                    <div className="px-4 py-2 text-xs font-semibold text-gray-500 bg-gray-50 sticky top-0">
+                    <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 sticky top-0">
                       {section}
                     </div>
                     {sectionItems.map((item) => {
@@ -172,25 +172,25 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                           whileHover={{ x: 4 }}
                           className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${
                             isSelected
-                              ? 'bg-gradient-to-r from-prefeitura-verde/10 to-green-50 border-l-2 border-prefeitura-verde'
-                              : 'hover:bg-gray-50'
+                              ? 'bg-gradient-to-r from-green-500/10 to-green-50 dark:from-green-500/20 dark:to-green-900/10 border-l-2 border-green-600'
+                              : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
                           }`}
                         >
                           {item.icon && (
-                            <span className={isSelected ? 'text-prefeitura-verde' : 'text-gray-400'}>
+                            <span className={isSelected ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}>
                               {item.icon}
                             </span>
                           )}
-                          <span className="flex-1 text-left font-medium text-gray-900">
+                          <span className="flex-1 text-left font-medium text-gray-900 dark:text-white">
                             {item.label}
                           </span>
                           {recentItems.includes(item.id) && (
-                            <Clock size={16} className="text-gray-400" />
+                            <Clock size={16} className="text-gray-400 dark:text-gray-500" />
                           )}
                           <ChevronRight
                             size={16}
                             className={`transition-opacity ${
-                              isSelected ? 'opacity-100 text-prefeitura-verde' : 'opacity-0'
+                              isSelected ? 'opacity-100 text-green-600 dark:text-green-400' : 'opacity-0'
                             }`}
                           />
                         </motion.button>
@@ -202,22 +202,22 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
             </div>
 
             {/* Footer */}
-            <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 flex items-center justify-between text-xs text-gray-500">
+            <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1">
-                  <kbd className="px-2 py-1 bg-white border border-gray-300 rounded shadow-sm">↑</kbd>
-                  <kbd className="px-2 py-1 bg-white border border-gray-300 rounded shadow-sm">↓</kbd>
+                  <kbd className="px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm">^</kbd>
+                  <kbd className="px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm">v</kbd>
                   <span className="ml-1">Navegar</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <kbd className="px-2 py-1 bg-white border border-gray-300 rounded shadow-sm">↵</kbd>
+                  <kbd className="px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm">Enter</kbd>
                   <span className="ml-1">Selecionar</span>
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <kbd className="px-2 py-1 bg-white border border-gray-300 rounded shadow-sm">Cmd</kbd>
+                <kbd className="px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm">Cmd</kbd>
                 <span>+</span>
-                <kbd className="px-2 py-1 bg-white border border-gray-300 rounded shadow-sm">K</kbd>
+                <kbd className="px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm">K</kbd>
               </div>
             </div>
           </motion.div>
