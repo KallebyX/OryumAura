@@ -1,4 +1,4 @@
-const CACHE_VERSION = '2.0.0';
+const CACHE_VERSION = '2.0.1';
 const CACHE_NAME = `oryum-aura-v${CACHE_VERSION}`;
 const CACHE_STATIC = `${CACHE_NAME}-static`;
 const CACHE_DYNAMIC = `${CACHE_NAME}-dynamic`;
@@ -54,6 +54,13 @@ self.addEventListener('activate', (event) => {
 
 // Fetch event - network first, fallback to cache
 self.addEventListener('fetch', (event) => {
+  const requestUrl = new URL(event.request.url);
+
+  // Only handle http/https requests - skip chrome-extension://, etc.
+  if (!requestUrl.protocol.startsWith('http')) {
+    return;
+  }
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {
@@ -67,7 +74,10 @@ self.addEventListener('fetch', (event) => {
 
         caches.open(CACHE_NAME)
           .then((cache) => {
-            cache.put(event.request, responseToCache);
+            // Double-check URL scheme before caching
+            if (event.request.url.startsWith('http')) {
+              cache.put(event.request, responseToCache);
+            }
           });
 
         return response;
