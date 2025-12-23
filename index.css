@@ -1,33 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap');
 
-@import "tailwindcss";
-
-/* Tailwind v4 CSS-first configuration */
-@theme {
-  /* Brand colors for the municipality */
-  --color-brand-primary: #2E7D32;
-  --color-brand-secondary: #FFC107;
-  --color-brand-danger: #D32F2F;
-
-  /* Neutral palette */
-  --color-neutral-50: #f8fafc;
-  --color-neutral-100: #f1f5f9;
-  --color-neutral-200: #e2e8f0;
-  --color-neutral-300: #cbd5e1;
-  --color-neutral-400: #94a3b8;
-  --color-neutral-500: #64748b;
-  --color-neutral-600: #475569;
-  --color-neutral-700: #334155;
-  --color-neutral-800: #1e293b;
-  --color-neutral-900: #0f172a;
-
-  /* Font configuration */
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   :root {
-    /* Light mode CSS variables */
     --color-background: 249 250 251;
     --color-foreground: 55 65 81;
     --color-card: 255 255 255;
@@ -49,7 +27,6 @@
   }
 
   .dark {
-    /* Dark mode CSS variables */
     --color-background: 17 24 39;
     --color-foreground: 243 244 246;
     --color-card: 31 41 55;
@@ -70,7 +47,7 @@
   }
 
   * {
-    border-color: rgb(var(--color-border) / 1);
+    @apply border-gray-200 dark:border-gray-700;
   }
 
   html {
@@ -78,8 +55,7 @@
   }
 
   body {
-    background-color: rgb(var(--color-background));
-    color: rgb(var(--color-foreground));
+    @apply bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100;
     font-family: 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -88,11 +64,9 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-weight: 700;
-    color: rgb(var(--color-card-foreground));
+    @apply font-bold text-gray-900 dark:text-white;
   }
 
-  /* Ensure text is visible in both modes */
   p, span, div {
     color: inherit;
   }
@@ -106,157 +80,59 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
-    background-color: #f1f5f9;
-    border-radius: 0.25rem;
-  }
-
-  .dark .custom-scrollbar::-webkit-scrollbar-track {
-    background-color: #1f2937;
+    @apply bg-gray-100 dark:bg-gray-800 rounded;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #cbd5e1;
-    border-radius: 0.25rem;
-  }
-
-  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #4b5563;
+    @apply bg-gray-300 dark:bg-gray-600 rounded;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: #94a3b8;
-  }
-
-  .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: #6b7280;
+    @apply bg-gray-400 dark:bg-gray-500;
   }
 
   /* Focus Ring - Accessibility */
   .focus-ring:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px rgb(var(--color-ring)), 0 0 0 4px rgb(255 255 255);
+    @apply outline-none ring-2 ring-green-600 ring-offset-2 dark:ring-offset-gray-900;
   }
 
   /* Card Shadow */
   .card-shadow {
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    transition: box-shadow 0.2s;
+    @apply shadow-sm transition-shadow;
   }
 
   .card-shadow:hover {
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    @apply shadow-md;
   }
 
   /* Gradient Text */
   .gradient-text {
-    background-image: linear-gradient(to right, #2E7D32, #16a34a);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    @apply bg-gradient-to-r from-green-700 to-green-500 bg-clip-text text-transparent;
   }
 
   /* Button base styles */
   .btn-primary {
-    background: linear-gradient(to right, #2E7D32, #16a34a);
-    color: white;
-    font-weight: 600;
-    padding: 0.625rem 1rem;
-    border-radius: 0.5rem;
-    transition: all 0.2s;
-    box-shadow: 0 4px 6px -1px rgb(46 125 50 / 0.3);
+    @apply bg-gradient-to-r from-green-700 to-green-600 text-white font-semibold py-2.5 px-4 rounded-lg transition-all shadow-lg;
   }
 
   .btn-primary:hover {
-    background: linear-gradient(to right, #1B5E20, #15803d);
+    @apply from-green-800 to-green-700;
   }
 
   /* Card styles with proper dark mode */
   .card {
-    background-color: white;
-    border-radius: 0.75rem;
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
-    border: 1px solid #e5e7eb;
-  }
-
-  .dark .card {
-    background-color: #1f2937;
-    border-color: #374151;
+    @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700;
   }
 }
 
 @layer utilities {
-  /* Animation utilities */
-  @keyframes slideIn {
-    from {
-      transform: translateX(100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-
-  @keyframes slideOut {
-    from {
-      transform: translateX(0);
-      opacity: 1;
-    }
-    to {
-      transform: translateX(100%);
-      opacity: 0;
-    }
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes pulse-subtle {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.8;
-    }
-  }
-
-  .animate-slide-in {
-    animation: slideIn 0.3s ease-out;
-  }
-
-  .animate-slide-out {
-    animation: slideOut 0.3s ease-out;
-  }
-
-  .animate-fade-in {
-    animation: fadeIn 0.2s ease-out;
-  }
-
-  .animate-pulse-subtle {
-    animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
   /* Accessibility - Skip to main content */
   .skip-to-main {
-    position: absolute;
-    top: -10rem;
-    left: 0;
-    background-color: rgb(var(--color-primary));
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 0.25rem;
-    z-index: 50;
-    transition: top 0.2s;
+    @apply absolute -top-40 left-0 bg-green-600 text-white px-4 py-2 rounded z-50 transition-all;
   }
 
   .skip-to-main:focus {
-    top: 0;
+    @apply top-0;
   }
 
   /* Text overflow utilities */
@@ -283,10 +159,10 @@
 
   /* Visibility helpers for dark mode */
   .text-visible {
-    color: rgb(var(--color-foreground));
+    @apply text-gray-800 dark:text-gray-100;
   }
 
   .bg-visible {
-    background-color: rgb(var(--color-background));
+    @apply bg-gray-50 dark:bg-gray-900;
   }
 }
