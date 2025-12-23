@@ -116,7 +116,7 @@ class ErrorBoundary extends Component<Props, State> {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={this.handleReset}
-                className="flex items-center justify-center gap-2 bg-gradient-to-r from-prefeitura-verde to-green-600 text-white px-6 py-3 rounded-lg font-semibold shadow-lg shadow-green-500/30 hover:from-green-700 hover:to-green-800 transition-all"
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-green-600 to-green-600 text-white px-6 py-3 rounded-lg font-semibold shadow-lg shadow-green-500/30 hover:from-green-700 hover:to-green-800 transition-all"
               >
                 <RefreshCw size={20} />
                 Tentar Novamente

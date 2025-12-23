@@ -69,7 +69,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={action.onClick}
-          className="bg-gradient-to-r from-prefeitura-verde to-green-600 text-white px-6 py-3 rounded-lg font-semibold shadow-lg shadow-green-500/30 hover:from-green-700 hover:to-green-800 transition-all flex items-center gap-2"
+          className="bg-gradient-to-r from-green-600 to-green-600 text-white px-6 py-3 rounded-lg font-semibold shadow-lg shadow-green-500/30 hover:from-green-700 hover:to-green-800 transition-all flex items-center gap-2"
         >
           {action.icon}
           {action.label}

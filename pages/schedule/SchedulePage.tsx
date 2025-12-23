@@ -79,7 +79,7 @@ const SchedulePage: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-800">Agenda de Atendimentos</h1>
           <button 
             onClick={() => { setSelectedEvent(null); setIsModalOpen(true); }}
-            className="bg-prefeitura-verde hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg"
+            className="bg-green-600 hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg"
           >
             Novo Agendamento
           </button>

@@ -85,7 +85,7 @@ const ProgramManagementPage: React.FC = () => {
         <h1 className="text-3xl font-bold text-gray-800">Gerenciamento de Programas</h1>
         <button
           onClick={() => handleOpenModal()}
-          className="bg-prefeitura-verde hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105"
+          className="bg-green-600 hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105"
         >
           Novo Programa
         </button>
@@ -140,7 +140,7 @@ const ProgramManagementPage: React.FC = () => {
               type="text"
               value={programName}
               onChange={(e) => setProgramName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-prefeitura-verde focus:border-prefeitura-verde"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-600 focus:border-green-600"
               required
             />
           </div>
@@ -154,7 +154,7 @@ const ProgramManagementPage: React.FC = () => {
             </button>
             <button
               type="submit"
-              className="bg-prefeitura-verde hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg"
+              className="bg-green-600 hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg"
             >
               {selectedProgram ? 'Salvar Alterações' : 'Criar Programa'}
             </button>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { useDarkMode } from '../context/DarkModeContext';
 import {
   Home,
   Users,
@@ -34,6 +35,7 @@ interface MenuItem {
 
 const Sidebar: React.FC = () => {
   const { user } = useAuth();
+  const { isDarkMode } = useDarkMode();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(true);
   const [expandedMenus, setExpandedMenus] = useState<string[]>(['admin']);
@@ -162,13 +164,13 @@ const Sidebar: React.FC = () => {
             whileHover={{ x: 4 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => toggleMenu(item.name)}
-            className={`w-full flex items-center justify-between px-4 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 transition-all rounded-lg mx-2 ${
+            className={`w-full flex items-center justify-between px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all rounded-lg mx-2 ${
               isChild ? 'pl-8' : ''
             }`}
           >
             <div className="flex items-center gap-3">
               <motion.span
-                className="text-gray-600"
+                className="text-gray-600 dark:text-gray-400"
                 whileHover={{ rotate: 5, scale: 1.1 }}
                 transition={{ type: "spring", stiffness: 400 }}
               >
@@ -180,7 +182,7 @@ const Sidebar: React.FC = () => {
             </div>
             {isOpen && (
               <motion.span
-                className="text-gray-400"
+                className="text-gray-400 dark:text-gray-500"
                 animate={{ rotate: isExpanded ? 0 : -90 }}
                 transition={{ duration: 0.2 }}
               >
@@ -195,7 +197,7 @@ const Sidebar: React.FC = () => {
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="bg-gray-50/50 overflow-hidden"
+                className="bg-gray-50/50 dark:bg-gray-800/50 overflow-hidden"
               >
                 {item.children?.map(child => renderMenuItem(child, true))}
               </motion.div>
@@ -211,8 +213,8 @@ const Sidebar: React.FC = () => {
         to={item.path!}
         className={`relative group flex items-center justify-between px-4 py-3 mx-2 transition-all rounded-lg ${
           active
-            ? 'bg-gradient-to-r from-prefeitura-verde to-green-600 text-white shadow-lg shadow-green-500/30'
-            : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100'
+            ? 'bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg shadow-green-500/30'
+            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
         } ${isChild ? 'pl-8' : ''}`}
       >
         {active && (
@@ -224,7 +226,7 @@ const Sidebar: React.FC = () => {
         )}
         <div className="flex items-center gap-3">
           <motion.span
-            className={active ? 'text-white' : 'text-gray-600'}
+            className={active ? 'text-white' : 'text-gray-600 dark:text-gray-400'}
             whileHover={{ scale: 1.1, rotate: 5 }}
             transition={{ type: "spring", stiffness: 400 }}
           >
@@ -259,7 +261,7 @@ const Sidebar: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden backdrop-blur-sm"
+            className="fixed inset-0 bg-black/50 z-30 lg:hidden backdrop-blur-sm"
             onClick={() => setIsOpen(false)}
           />
         )}
@@ -270,24 +272,24 @@ const Sidebar: React.FC = () => {
         initial={false}
         animate={{ width: isOpen ? 256 : 80 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="fixed left-0 top-0 h-full bg-white shadow-2xl z-40 border-r border-gray-100"
+        className="fixed left-0 top-0 h-full bg-white dark:bg-gray-900 shadow-2xl z-40 border-r border-gray-200 dark:border-gray-700"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           {isOpen && (
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-prefeitura-verde rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-green-600 to-green-700 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-lg">OA</span>
               </div>
               <div>
-                <h2 className="font-bold text-gray-800 text-sm">Oryum Aura</h2>
-                <p className="text-xs text-gray-500">Sistema SUAS</p>
+                <h2 className="font-bold text-gray-800 dark:text-white text-sm">Oryum Aura</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Sistema SUAS</p>
               </div>
             </div>
           )}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors lg:block hidden"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors lg:block hidden text-gray-600 dark:text-gray-400"
           >
             {isOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -295,18 +297,18 @@ const Sidebar: React.FC = () => {
 
         {/* User Info */}
         {isOpen && user && (
-          <div className="p-4 border-b border-gray-200 bg-gray-50">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-prefeitura-verde to-green-600 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-600 to-green-700 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-lg">
                   {user.nome.charAt(0).toUpperCase()}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-gray-800 truncate">
+                <p className="font-semibold text-gray-800 dark:text-white truncate">
                   {user.nome.split(' ')[0]}
                 </p>
-                <p className="text-xs text-gray-500 capitalize">
+                <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
                   {user.cargo}
                 </p>
               </div>
@@ -326,13 +328,13 @@ const Sidebar: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-gradient-to-t from-gray-50 to-white"
+              className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700 bg-gradient-to-t from-gray-50 to-white dark:from-gray-900 dark:to-gray-800"
             >
               <div className="text-center">
-                <p className="text-xs text-gray-500 font-medium">
+                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
                   Versão 3.0 - Sistema Completo
                 </p>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                   © 2025 Oryum Tech
                 </p>
               </div>
@@ -351,7 +353,7 @@ const Sidebar: React.FC = () => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 left-6 p-4 bg-gradient-to-r from-prefeitura-verde to-green-600 text-white rounded-full shadow-lg shadow-green-500/30 z-20 lg:hidden"
+            className="fixed bottom-6 left-6 p-4 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-full shadow-lg shadow-green-500/30 z-20 lg:hidden"
           >
             <Menu size={24} />
           </motion.button>

@@ -117,21 +117,21 @@ function Table<T extends Record<string, any>>({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
       {/* Toolbar */}
       {(searchable || filterable || exportable) && (
-        <div className="p-4 border-b border-gray-200 bg-gray-50/50">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
             {/* Search */}
             {searchable && (
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
                 <input
                   type="text"
                   placeholder="Buscar..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde focus:border-transparent transition-all"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                 />
               </div>
             )}
@@ -142,7 +142,7 @@ function Table<T extends Record<string, any>>({
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+                  className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2"
                 >
                   <Filter size={18} />
                   <span className="hidden sm:inline">Filtrar</span>
@@ -153,7 +153,7 @@ function Table<T extends Record<string, any>>({
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={exportToCSV}
-                  className="px-4 py-2 bg-prefeitura-verde text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
                 >
                   <Download size={18} />
                   <span className="hidden sm:inline">Exportar</span>
@@ -167,13 +167,13 @@ function Table<T extends Record<string, any>>({
       {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
             <tr>
               {columns.map((column) => (
                 <th
                   key={column.key}
-                  className={`px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider ${
-                    column.sortable ? 'cursor-pointer select-none hover:bg-gray-100 transition-colors' : ''
+                  className={`px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider ${
+                    column.sortable ? 'cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors' : ''
                   }`}
                   style={{ width: column.width }}
                   onClick={() => column.sortable && handleSort(column.key)}
@@ -186,16 +186,16 @@ function Table<T extends Record<string, any>>({
                           size={14}
                           className={`-mb-1 ${
                             sortKey === column.key && sortDirection === 'asc'
-                              ? 'text-prefeitura-verde'
-                              : 'text-gray-400'
+                              ? 'text-green-600 dark:text-green-400'
+                              : 'text-gray-400 dark:text-gray-500'
                           }`}
                         />
                         <ChevronDown
                           size={14}
                           className={`-mt-1 ${
                             sortKey === column.key && sortDirection === 'desc'
-                              ? 'text-prefeitura-verde'
-                              : 'text-gray-400'
+                              ? 'text-green-600 dark:text-green-400'
+                              : 'text-gray-400 dark:text-gray-500'
                           }`}
                         />
                       </div>
@@ -205,7 +205,7 @@ function Table<T extends Record<string, any>>({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
+          <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
             <AnimatePresence mode="popLayout">
               {loading ? (
                 // Loading skeleton
@@ -213,14 +213,14 @@ function Table<T extends Record<string, any>>({
                   <tr key={`skeleton-${i}`}>
                     {columns.map((col) => (
                       <td key={col.key} className="px-6 py-4">
-                        <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                       </td>
                     ))}
                   </tr>
                 ))
               ) : paginatedData.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={columns.length} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                     {emptyMessage}
                   </td>
                 </tr>
@@ -235,12 +235,12 @@ function Table<T extends Record<string, any>>({
                     onClick={() => onRowClick?.(row)}
                     className={`${
                       onRowClick
-                        ? 'cursor-pointer hover:bg-gray-50 transition-colors'
+                        ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors'
                         : ''
                     }`}
                   >
                     {columns.map((column) => (
-                      <td key={column.key} className="px-6 py-4 text-sm text-gray-900">
+                      <td key={column.key} className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
                         {column.render
                           ? column.render(row[column.key], row)
                           : row[column.key]}
@@ -256,9 +256,9 @@ function Table<T extends Record<string, any>>({
 
       {/* Pagination */}
       {pagination && totalPages > 1 && (
-        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50/50">
+        <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
           <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-700">
+            <div className="text-sm text-gray-700 dark:text-gray-300">
               Mostrando{' '}
               <span className="font-semibold">{(currentPage - 1) * pageSize + 1}</span> a{' '}
               <span className="font-semibold">
@@ -272,7 +272,7 @@ function Table<T extends Record<string, any>>({
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Anterior
               </motion.button>
@@ -285,8 +285,8 @@ function Table<T extends Record<string, any>>({
                     onClick={() => setCurrentPage(i + 1)}
                     className={`w-10 h-10 rounded-lg transition-all ${
                       currentPage === i + 1
-                        ? 'bg-prefeitura-verde text-white shadow-lg'
-                        : 'bg-white border border-gray-300 hover:bg-gray-50'
+                        ? 'bg-green-600 text-white shadow-lg'
+                        : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
                     }`}
                   >
                     {i + 1}
@@ -298,7 +298,7 @@ function Table<T extends Record<string, any>>({
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Próxima
               </motion.button>

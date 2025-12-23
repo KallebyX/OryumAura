@@ -61,7 +61,7 @@ const Badge: React.FC<BadgeProps> = ({
           className={`${sizeClasses[size].container} rounded-full flex items-center justify-center ${
             earned
               ? `bg-gradient-to-br ${gradients[type]} shadow-2xl`
-              : 'bg-gray-200'
+              : 'bg-gray-200 dark:bg-gray-700'
           }`}
           animate={earned ? {
             boxShadow: [
@@ -74,7 +74,7 @@ const Badge: React.FC<BadgeProps> = ({
         >
           <Icon
             size={sizeClasses[size].icon}
-            className={earned ? 'text-white' : 'text-gray-400'}
+            className={earned ? 'text-white' : 'text-gray-400 dark:text-gray-500'}
           />
         </motion.div>
 
@@ -88,7 +88,7 @@ const Badge: React.FC<BadgeProps> = ({
               fill="none"
               stroke="currentColor"
               strokeWidth="3"
-              className="text-gray-300"
+              className="text-gray-300 dark:text-gray-600"
             />
             <motion.circle
               cx="50%"
@@ -98,7 +98,7 @@ const Badge: React.FC<BadgeProps> = ({
               stroke="currentColor"
               strokeWidth="3"
               strokeLinecap="round"
-              className="text-prefeitura-verde"
+              className="text-green-600 dark:text-green-400"
               initial={{ pathLength: 0 }}
               animate={{ pathLength: progress / 100 }}
               transition={{ duration: 1, ease: "easeOut" }}
@@ -135,14 +135,14 @@ const Badge: React.FC<BadgeProps> = ({
 
       {/* Label */}
       <div className="text-center">
-        <p className={`font-semibold ${earned ? 'text-gray-900' : 'text-gray-500'}`}>
+        <p className={`font-semibold ${earned ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
           {label}
         </p>
         {description && (
-          <p className="text-xs text-gray-500 mt-1">{description}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{description}</p>
         )}
         {!earned && progress !== undefined && (
-          <p className="text-xs text-prefeitura-verde font-semibold mt-1">
+          <p className="text-xs text-green-600 dark:text-green-400 font-semibold mt-1">
             {progress}%
           </p>
         )}

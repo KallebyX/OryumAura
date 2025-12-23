@@ -99,7 +99,7 @@ const AuditPage: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <Shield className="animate-pulse mx-auto mb-4 text-prefeitura-verde" size={48} />
+          <Shield className="animate-pulse mx-auto mb-4 text-green-600" size={48} />
           <p className="text-gray-600">Carregando logs de auditoria...</p>
         </div>
       </div>
@@ -113,7 +113,7 @@ const AuditPage: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-              <Shield size={32} className="text-prefeitura-verde" />
+              <Shield size={32} className="text-green-600" />
               Auditoria LGPD
             </h1>
             <p className="text-gray-600 mt-1">
@@ -122,7 +122,7 @@ const AuditPage: React.FC = () => {
           </div>
           <button
             onClick={exportLogs}
-            className="bg-prefeitura-verde hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
+            className="bg-green-600 hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"
           >
             <Download size={20} />
             Exportar Logs
@@ -197,7 +197,7 @@ const AuditPage: React.FC = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Usuário, ação, recurso, IP..."
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
             />
           </div>
 
@@ -210,7 +210,7 @@ const AuditPage: React.FC = () => {
             <select
               value={filterAction}
               onChange={(e) => setFilterAction(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
             >
               <option value="all">Todas as ações</option>
               {uniqueActions.map(action => (
@@ -228,7 +228,7 @@ const AuditPage: React.FC = () => {
             <select
               value={filterResource}
               onChange={(e) => setFilterResource(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde"
+              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600"
             >
               <option value="all">Todos os recursos</option>
               {uniqueResources.map(resource => (
@@ -297,7 +297,7 @@ const AuditPage: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <button
                         onClick={() => setSelectedLog(log)}
-                        className="text-prefeitura-verde hover:text-green-700 font-medium flex items-center gap-1"
+                        className="text-green-600 hover:text-green-700 font-medium flex items-center gap-1"
                       >
                         <Eye size={16} />
                         Ver Detalhes

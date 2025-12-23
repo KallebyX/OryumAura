@@ -93,7 +93,7 @@ const IADashboardPage: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <Brain className="animate-pulse mx-auto mb-4 text-prefeitura-verde" size={48} />
+          <Brain className="animate-pulse mx-auto mb-4 text-green-600" size={48} />
           <p className="text-gray-600">Carregando inteligência artificial...</p>
         </div>
       </div>
@@ -104,13 +104,13 @@ const IADashboardPage: React.FC = () => {
     <div className="bg-white p-8 rounded-lg shadow-md animate-slide-in">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-          <Brain size={36} className="text-prefeitura-verde" />
+          <Brain size={36} className="text-green-600" />
           Inteligência Artificial
         </h1>
         <button
           onClick={handleGenerateInsights}
           disabled={generating}
-          className="bg-prefeitura-verde hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 disabled:opacity-50"
+          className="bg-green-600 hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 disabled:opacity-50"
         >
           <RefreshCw size={20} className={generating ? 'animate-spin' : ''} />
           Gerar Insights
@@ -178,7 +178,7 @@ const IADashboardPage: React.FC = () => {
               <select
                 value={selectedBeneficiary}
                 onChange={(e) => setSelectedBeneficiary(e.target.value)}
-                className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-prefeitura-verde text-sm"
+                className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 text-sm"
               >
                 <option value="">Selecione um beneficiário</option>
                 {beneficiaries.map(b => (
@@ -188,7 +188,7 @@ const IADashboardPage: React.FC = () => {
               <button
                 onClick={handleGeneratePrediction}
                 disabled={generating || !selectedBeneficiary}
-                className="bg-prefeitura-verde hover:opacity-90 text-white font-semibold px-4 py-2 rounded-lg disabled:opacity-50 text-sm"
+                className="bg-green-600 hover:opacity-90 text-white font-semibold px-4 py-2 rounded-lg disabled:opacity-50 text-sm"
               >
                 {generating ? 'Gerando...' : 'Analisar'}
               </button>
@@ -318,7 +318,7 @@ const IADashboardPage: React.FC = () => {
                 <p className="text-sm">Nenhum insight gerado ainda</p>
                 <button
                   onClick={handleGenerateInsights}
-                  className="mt-4 text-sm text-prefeitura-verde hover:underline"
+                  className="mt-4 text-sm text-green-600 hover:underline"
                 >
                   Clique em "Gerar Insights" para começar
                 </button>

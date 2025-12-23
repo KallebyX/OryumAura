@@ -175,7 +175,7 @@ const BeneficiaryProfilePage: React.FC = () => {
               <div className="bg-white p-6 rounded-2xl shadow-md">
                   <div className="flex justify-between items-center mb-4 border-b pb-3">
                       <h2 className="text-2xl font-bold text-gray-700">Programas</h2>
-                      <button onClick={() => setIsModalOpen(true)} className="bg-prefeitura-verde hover:opacity-90 text-white font-bold py-2 px-3 rounded-lg text-sm flex items-center gap-1 transition-opacity">
+                      <button onClick={() => setIsModalOpen(true)} className="bg-green-600 hover:opacity-90 text-white font-bold py-2 px-3 rounded-lg text-sm flex items-center gap-1 transition-opacity">
                         <Plus size={16} /> Adicionar
                       </button>
                   </div>
@@ -251,7 +251,7 @@ const BeneficiaryProfilePage: React.FC = () => {
               <button type="button" onClick={() => setIsModalOpen(false)} className="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300">
                 Cancelar
               </button>
-              <button type="submit" className="bg-prefeitura-verde text-white font-bold py-2 px-4 rounded-lg hover:opacity-90">
+              <button type="submit" className="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:opacity-90">
                 Adicionar Programa
               </button>
             </div>

@@ -52,11 +52,11 @@ const ReportsPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
           <div className="bg-white p-6 rounded-lg shadow-lg text-center">
             <h2 className="text-xl font-semibold text-gray-700">Total de Beneficiários</h2>
-            <p className="text-5xl font-bold text-prefeitura-verde mt-2">{data.totalBeneficiaries}</p>
+            <p className="text-5xl font-bold text-green-600 mt-2">{data.totalBeneficiaries}</p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-lg text-center">
             <h2 className="text-xl font-semibold text-gray-700">Total de Agendamentos</h2>
-            <p className="text-5xl font-bold text-prefeitura-amarelo mt-2">{data.totalAppointments}</p>
+            <p className="text-5xl font-bold text-amber-500 mt-2">{data.totalAppointments}</p>
           </div>
         </div>
 

@@ -189,7 +189,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
               animate={{ opacity: 1 }}
               whileHover={{ scale: 1.02 }}
               onClick={() => onAddCard?.(column.id)}
-              className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-prefeitura-verde hover:text-prefeitura-verde transition-colors"
+              className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-green-600 hover:text-green-600 transition-colors"
             >
               + Adicionar cartão
             </motion.button>

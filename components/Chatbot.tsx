@@ -23,7 +23,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ sessionId }) => {
           id: 0,
           session_id: currentSessionId,
           sender: 'bot',
-          message: '👋 Olá! Sou o assistente virtual da Secretaria de Assistência Social. Como posso ajudar você hoje?',
+          message: 'Ola! Sou o assistente virtual da Secretaria de Assistencia Social. Como posso ajudar voce hoje?',
           timestamp: new Date().toISOString(),
           intent: 'greeting',
           confidence: 1.0
@@ -77,7 +77,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ sessionId }) => {
         id: Date.now(),
         session_id: currentSessionId,
         sender: 'bot',
-        message: '❌ Desculpe, ocorreu um erro. Por favor, tente novamente.',
+        message: 'Desculpe, ocorreu um erro. Por favor, tente novamente.',
         timestamp: new Date().toISOString()
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -94,10 +94,10 @@ const Chatbot: React.FC<ChatbotProps> = ({ sessionId }) => {
   };
 
   const quickQuestions = [
-    'Quais são os horários de atendimento?',
-    'Como fazer o CadÚnico?',
-    'Como solicitar o Bolsa Família?',
-    'Como solicitar uma cesta básica?',
+    'Quais sao os horarios de atendimento?',
+    'Como fazer o CadUnico?',
+    'Como solicitar o Bolsa Familia?',
+    'Como solicitar uma cesta basica?',
     'Como agendar um atendimento?'
   ];
 
@@ -107,7 +107,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ sessionId }) => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 bg-prefeitura-verde hover:opacity-90 text-white p-4 rounded-full shadow-lg z-50 transition-transform hover:scale-110"
+          className="fixed bottom-6 right-6 bg-green-600 hover:bg-green-700 text-white p-4 rounded-full shadow-lg z-50 transition-transform hover:scale-110"
           aria-label="Abrir chat"
         >
           <MessageCircle size={28} />
@@ -116,9 +116,9 @@ const Chatbot: React.FC<ChatbotProps> = ({ sessionId }) => {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-white rounded-lg shadow-2xl z-50 flex flex-col border border-gray-200">
+        <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-white dark:bg-gray-800 rounded-lg shadow-2xl z-50 flex flex-col border border-gray-200 dark:border-gray-700">
           {/* Header */}
-          <div className="bg-prefeitura-verde text-white p-4 rounded-t-lg flex items-center justify-between">
+          <div className="bg-green-600 text-white p-4 rounded-t-lg flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Bot size={24} />
               <div>
@@ -136,7 +136,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ sessionId }) => {
           </div>
 
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-gray-900">
             {messages.map((msg, idx) => (
               <div
                 key={msg.id || idx}
@@ -144,7 +144,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ sessionId }) => {
               >
                 {msg.sender === 'bot' && (
                   <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-prefeitura-verde rounded-full flex items-center justify-center">
+                    <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
                       <Bot size={18} className="text-white" />
                     </div>
                   </div>
@@ -153,14 +153,14 @@ const Chatbot: React.FC<ChatbotProps> = ({ sessionId }) => {
                 <div
                   className={`max-w-[75%] p-3 rounded-lg ${
                     msg.sender === 'user'
-                      ? 'bg-prefeitura-verde text-white rounded-br-none'
-                      : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none'
+                      ? 'bg-green-600 text-white rounded-br-none'
+                      : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-bl-none'
                   }`}
                 >
                   <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
                   <p
                     className={`text-xs mt-1 ${
-                      msg.sender === 'user' ? 'text-white/70' : 'text-gray-500'
+                      msg.sender === 'user' ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'
                     }`}
                   >
                     {new Date(msg.timestamp).toLocaleTimeString('pt-BR', {
@@ -183,11 +183,11 @@ const Chatbot: React.FC<ChatbotProps> = ({ sessionId }) => {
             {loading && (
               <div className="flex gap-2 justify-start">
                 <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-prefeitura-verde rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
                     <Bot size={18} className="text-white" />
                   </div>
                 </div>
-                <div className="bg-white border border-gray-200 p-3 rounded-lg rounded-bl-none">
+                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 rounded-lg rounded-bl-none">
                   <div className="flex gap-1">
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -202,8 +202,8 @@ const Chatbot: React.FC<ChatbotProps> = ({ sessionId }) => {
 
           {/* Quick Questions */}
           {messages.length <= 1 && (
-            <div className="px-4 py-2 border-t border-gray-200 bg-white">
-              <p className="text-xs font-semibold text-gray-600 mb-2">Perguntas frequentes:</p>
+            <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+              <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Perguntas frequentes:</p>
               <div className="flex flex-wrap gap-2">
                 {quickQuestions.slice(0, 3).map((question, idx) => (
                   <button
@@ -212,7 +212,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ sessionId }) => {
                       setInputMessage(question);
                       setTimeout(() => handleSendMessage(), 100);
                     }}
-                    className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors"
+                    className="text-xs bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-2 py-1 rounded transition-colors"
                   >
                     {question}
                   </button>
@@ -222,7 +222,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ sessionId }) => {
           )}
 
           {/* Input Area */}
-          <div className="p-4 border-t border-gray-200 bg-white rounded-b-lg">
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-b-lg">
             <div className="flex gap-2">
               <input
                 type="text"
@@ -230,19 +230,19 @@ const Chatbot: React.FC<ChatbotProps> = ({ sessionId }) => {
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Digite sua mensagem..."
-                className="flex-1 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-prefeitura-verde text-sm"
+                className="flex-1 p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                 disabled={loading}
               />
               <button
                 onClick={handleSendMessage}
                 disabled={loading || !inputMessage.trim()}
-                className="bg-prefeitura-verde hover:opacity-90 text-white p-2 rounded-lg disabled:opacity-50 transition-opacity"
+                className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg disabled:opacity-50 transition-opacity"
                 aria-label="Enviar mensagem"
               >
                 <Send size={20} />
               </button>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
               Pressione Enter para enviar
             </p>
           </div>
