@@ -18,9 +18,10 @@ import {
   Menu,
   X,
   ChevronDown,
-  ChevronRight,
   Shield,
-  MessageCircle
+  Sparkles,
+  Layers,
+  TrendingUp,
 } from 'lucide-react';
 
 interface MenuItem {
@@ -39,21 +40,22 @@ const Sidebar: React.FC = () => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(true);
   const [expandedMenus, setExpandedMenus] = useState<string[]>(['admin']);
+  const [isHovering, setIsHovering] = useState(false);
 
   const menuItems: MenuItem[] = [
     {
-      name: 'Início',
+      name: 'Inicio',
       path: user?.cargo === 'secretario' ? '/secretary' : user?.cargo === 'servidor' ? '/dashboard' : '/portal',
       icon: <Home size={20} />,
       roles: ['secretario', 'servidor', 'beneficiario']
     },
     {
-      name: 'Administração',
-      icon: <Settings size={20} />,
+      name: 'Administracao',
+      icon: <Layers size={20} />,
       roles: ['secretario', 'servidor'],
       children: [
         {
-          name: 'Beneficiários',
+          name: 'Beneficiarios',
           path: '/admin/beneficiaries',
           icon: <Users size={18} />,
           roles: ['secretario', 'servidor']
@@ -65,7 +67,7 @@ const Sidebar: React.FC = () => {
           roles: ['secretario']
         },
         {
-          name: 'Relatórios',
+          name: 'Relatorios',
           path: '/admin/reports',
           icon: <BarChart3 size={18} />,
           roles: ['secretario']
@@ -77,7 +79,7 @@ const Sidebar: React.FC = () => {
       path: '/cras',
       icon: <MapPin size={20} />,
       badge: 'Novo',
-      badgeColor: 'bg-green-500',
+      badgeColor: 'bg-success-500',
       roles: ['secretario', 'servidor']
     },
     {
@@ -85,23 +87,21 @@ const Sidebar: React.FC = () => {
       path: '/creas',
       icon: <AlertTriangle size={20} />,
       badge: 'Novo',
-      badgeColor: 'bg-red-500',
+      badgeColor: 'bg-warning-500',
       roles: ['secretario', 'servidor']
     },
     {
-      name: 'Benefícios',
+      name: 'Beneficios',
       path: '/benefits',
       icon: <Gift size={20} />,
-      badge: 'Novo',
-      badgeColor: 'bg-purple-500',
       roles: ['secretario', 'servidor']
     },
     {
-      name: 'Inteligência Artificial',
+      name: 'Inteligencia Artificial',
       path: '/ia',
       icon: <Brain size={20} />,
       badge: 'IA',
-      badgeColor: 'bg-blue-500',
+      badgeColor: 'bg-accent-500',
       roles: ['secretario', 'servidor']
     },
     {
@@ -111,11 +111,11 @@ const Sidebar: React.FC = () => {
       roles: ['secretario']
     },
     {
-      name: 'Estatísticas',
+      name: 'Estatisticas',
       path: '/stats',
-      icon: <BarChart3 size={20} />,
+      icon: <TrendingUp size={20} />,
       badge: 'Pro',
-      badgeColor: 'bg-indigo-500',
+      badgeColor: 'bg-primary-500',
       roles: ['secretario', 'servidor']
     },
     {
@@ -125,7 +125,7 @@ const Sidebar: React.FC = () => {
       roles: ['secretario', 'servidor']
     },
     {
-      name: 'Notícias',
+      name: 'Noticias',
       path: '/news',
       icon: <Newspaper size={20} />,
       roles: ['secretario', 'servidor', 'beneficiario']
@@ -150,6 +150,8 @@ const Sidebar: React.FC = () => {
     return roles.includes(user.cargo);
   };
 
+  const sidebarWidth = isOpen ? 280 : 80;
+
   const renderMenuItem = (item: MenuItem, isChild: boolean = false) => {
     if (!hasAccess(item.roles)) return null;
 
@@ -164,32 +166,38 @@ const Sidebar: React.FC = () => {
             whileHover={{ x: 4 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => toggleMenu(item.name)}
-            className={`w-full flex items-center justify-between px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all rounded-lg mx-2 ${
-              isChild ? 'pl-8' : ''
-            }`}
+            className={`
+              w-full flex items-center justify-between px-4 py-3 mx-2 rounded-xl
+              text-slate-600 dark:text-slate-400
+              hover:bg-slate-100 dark:hover:bg-slate-800/50
+              hover:text-slate-900 dark:hover:text-white
+              transition-all duration-200
+              ${isChild ? 'pl-12' : ''}
+            `}
           >
             <div className="flex items-center gap-3">
-              <motion.span
-                className="text-gray-600 dark:text-gray-400"
-                whileHover={{ rotate: 5, scale: 1.1 }}
-                transition={{ type: "spring", stiffness: 400 }}
-              >
-                {item.icon}
-              </motion.span>
+              <span className="flex-shrink-0">{item.icon}</span>
               {isOpen && (
-                <span className="font-medium">{item.name}</span>
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="font-medium text-sm"
+                >
+                  {item.name}
+                </motion.span>
               )}
             </div>
             {isOpen && (
               <motion.span
-                className="text-gray-400 dark:text-gray-500"
                 animate={{ rotate: isExpanded ? 0 : -90 }}
                 transition={{ duration: 0.2 }}
+                className="text-slate-400 dark:text-slate-500"
               >
-                <ChevronDown size={18} />
+                <ChevronDown size={16} />
               </motion.span>
             )}
           </motion.button>
+
           <AnimatePresence>
             {isExpanded && isOpen && (
               <motion.div
@@ -197,7 +205,7 @@ const Sidebar: React.FC = () => {
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="bg-gray-50/50 dark:bg-gray-800/50 overflow-hidden"
+                className="overflow-hidden"
               >
                 {item.children?.map(child => renderMenuItem(child, true))}
               </motion.div>
@@ -208,46 +216,62 @@ const Sidebar: React.FC = () => {
     }
 
     return (
-      <Link
-        key={item.name}
-        to={item.path!}
-        className={`relative group flex items-center justify-between px-4 py-3 mx-2 transition-all rounded-lg ${
-          active
-            ? 'bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg shadow-green-500/30'
-            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-        } ${isChild ? 'pl-8' : ''}`}
-      >
-        {active && (
-          <motion.div
-            layoutId="activeIndicator"
-            className="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full"
-            transition={{ type: "spring", stiffness: 500, damping: 30 }}
-          />
-        )}
-        <div className="flex items-center gap-3">
-          <motion.span
-            className={active ? 'text-white' : 'text-gray-600 dark:text-gray-400'}
-            whileHover={{ scale: 1.1, rotate: 5 }}
-            transition={{ type: "spring", stiffness: 400 }}
-          >
-            {item.icon}
-          </motion.span>
-          {isOpen && (
-            <span className={`font-medium ${active ? 'text-white' : ''}`}>
-              {item.name}
-            </span>
+      <Link key={item.name} to={item.path!}>
+        <motion.div
+          whileHover={{ x: 4 }}
+          whileTap={{ scale: 0.98 }}
+          className={`
+            relative flex items-center justify-between px-4 py-3 mx-2 rounded-xl
+            transition-all duration-200 group
+            ${isChild ? 'ml-6' : ''}
+            ${active
+              ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white'
+            }
+          `}
+        >
+          {active && (
+            <motion.div
+              layoutId="activeIndicator"
+              className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full"
+              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+            />
           )}
-        </div>
-        {isOpen && item.badge && (
-          <motion.span
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            whileHover={{ scale: 1.1 }}
-            className={`text-xs px-2 py-0.5 rounded-full text-white font-semibold ${item.badgeColor || 'bg-blue-500'} shadow-lg`}
-          >
-            {item.badge}
-          </motion.span>
-        )}
+
+          <div className="flex items-center gap-3">
+            <motion.span
+              className="flex-shrink-0"
+              whileHover={{ scale: 1.1, rotate: 5 }}
+              transition={{ type: 'spring', stiffness: 400 }}
+            >
+              {item.icon}
+            </motion.span>
+            {isOpen && (
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="font-medium text-sm"
+              >
+                {item.name}
+              </motion.span>
+            )}
+          </div>
+
+          {isOpen && item.badge && (
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              whileHover={{ scale: 1.1 }}
+              className={`
+                text-2xs px-2 py-0.5 rounded-full text-white font-bold
+                ${item.badgeColor || 'bg-primary-500'}
+                shadow-lg
+              `}
+            >
+              {item.badge}
+            </motion.span>
+          )}
+        </motion.div>
       </Link>
     );
   };
@@ -261,7 +285,7 @@ const Sidebar: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-30 lg:hidden backdrop-blur-sm"
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-30 lg:hidden"
             onClick={() => setIsOpen(false)}
           />
         )}
@@ -270,54 +294,105 @@ const Sidebar: React.FC = () => {
       {/* Sidebar */}
       <motion.aside
         initial={false}
-        animate={{ width: isOpen ? 256 : 80 }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="fixed left-0 top-0 h-full bg-white dark:bg-gray-900 shadow-2xl z-40 border-r border-gray-200 dark:border-gray-700"
+        animate={{ width: sidebarWidth }}
+        onHoverStart={() => !isOpen && setIsHovering(true)}
+        onHoverEnd={() => setIsHovering(false)}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        className={`
+          fixed left-0 top-0 h-screen z-40
+          bg-white dark:bg-slate-900
+          border-r border-slate-200 dark:border-slate-800
+          flex flex-col
+          transition-shadow duration-300
+          ${isOpen ? 'shadow-elevation-5' : 'shadow-elevation-2'}
+        `}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          {isOpen && (
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-600 to-green-700 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-lg">OA</span>
-              </div>
-              <div>
-                <h2 className="font-bold text-gray-800 dark:text-white text-sm">Oryum Aura</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Sistema SUAS</p>
-              </div>
-            </div>
-          )}
-          <button
+        <div className="flex items-center justify-between p-4 border-b border-slate-200/60 dark:border-slate-800">
+          <AnimatePresence mode="wait">
+            {isOpen ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center gap-3"
+              >
+                <div className="relative">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shadow-lg shadow-primary-500/30">
+                    <Sparkles className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-success-500 rounded-full border-2 border-white dark:border-slate-900" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-slate-900 dark:text-white text-sm tracking-tight">
+                    Oryum Aura
+                  </h2>
+                  <p className="text-2xs text-slate-500 dark:text-slate-400 font-medium">
+                    Sistema SUAS
+                  </p>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shadow-lg shadow-primary-500/30 mx-auto"
+              >
+                <Sparkles className="w-5 h-5 text-white" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
             onClick={() => setIsOpen(!isOpen)}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors lg:block hidden text-gray-600 dark:text-gray-400"
+            className={`
+              p-2 rounded-lg
+              text-slate-400 hover:text-slate-600 dark:hover:text-slate-300
+              hover:bg-slate-100 dark:hover:bg-slate-800
+              transition-colors
+              ${!isOpen ? 'hidden' : ''}
+            `}
           >
-            {isOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
+            <X size={18} />
+          </motion.button>
         </div>
 
         {/* User Info */}
-        {isOpen && user && (
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-600 to-green-700 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-lg">
-                  {user.nome.charAt(0).toUpperCase()}
-                </span>
+        <AnimatePresence>
+          {isOpen && user && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="p-4 border-b border-slate-200/60 dark:border-slate-800"
+            >
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-800/50">
+                <div className="relative">
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">
+                      {user.nome.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-success-500 rounded-full border-2 border-white dark:border-slate-800" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-slate-900 dark:text-white text-sm truncate">
+                    {user.nome.split(' ').slice(0, 2).join(' ')}
+                  </p>
+                  <p className="text-2xs text-slate-500 dark:text-slate-400 capitalize font-medium">
+                    {user.cargo}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-gray-800 dark:text-white truncate">
-                  {user.nome.split(' ')[0]}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                  {user.cargo}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Menu Items */}
-        <nav className="overflow-y-auto h-[calc(100vh-180px)] py-4">
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto scrollbar-thin py-4 space-y-1">
           {menuItems.map(item => renderMenuItem(item))}
         </nav>
 
@@ -328,14 +403,17 @@ const Sidebar: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700 bg-gradient-to-t from-gray-50 to-white dark:from-gray-900 dark:to-gray-800"
+              className="p-4 border-t border-slate-200/60 dark:border-slate-800"
             >
-              <div className="text-center">
-                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                  Versão 3.0 - Sistema Completo
-                </p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                  © 2025 Oryum Tech
+              <div className="p-4 rounded-xl bg-gradient-to-br from-primary-500/10 to-accent-500/10 dark:from-primary-500/5 dark:to-accent-500/5">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles size={14} className="text-primary-500" />
+                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Versao 3.0
+                  </span>
+                </div>
+                <p className="text-2xs text-slate-500 dark:text-slate-400">
+                  2025 Oryum Tech
                 </p>
               </div>
             </motion.div>
@@ -353,7 +431,13 @@ const Sidebar: React.FC = () => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 left-6 p-4 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-full shadow-lg shadow-green-500/30 z-20 lg:hidden"
+            className="
+              fixed bottom-6 left-6 p-4 z-50
+              bg-gradient-to-r from-primary-500 to-accent-500
+              text-white rounded-2xl
+              shadow-lg shadow-primary-500/30
+              lg:hidden
+            "
           >
             <Menu size={24} />
           </motion.button>
