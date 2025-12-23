@@ -37,6 +37,21 @@ export const apiLogin = async (cpf: string, senha: string) => {
   }
 };
 
+export const apiRegister = async (data: {
+  cpf: string;
+  name: string;
+  senha: string;
+  email?: string;
+  phone?: string;
+}) => {
+  try {
+    const response = await api.post('/register', data);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.error || 'Erro ao fazer cadastro');
+  }
+};
+
 export const apiFetchProfile = async () => {
   try {
     const response = await api.get('/profile');

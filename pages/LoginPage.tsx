@@ -50,7 +50,7 @@ const LoginPage: React.FC = () => {
   };
 
   const demoCredentials = [
-    { role: 'Secretaria', cpf: '999.888.777-66', desc: 'Acesso total ao sistema' },
+    { role: 'Secretaria (Admin)', cpf: '000.000.000-00', desc: 'Acesso total ao sistema' },
     { role: 'Servidor', cpf: '111.222.333-44', desc: 'Gestao de atendimentos' },
     { role: 'Beneficiario', cpf: '555.666.777-88', desc: 'Portal do cidadao' },
   ];
@@ -268,7 +268,7 @@ const LoginPage: React.FC = () => {
                           transition={{ delay: index * 0.1 }}
                           onClick={() => {
                             setCpf(cred.cpf.replace(/\D/g, ''));
-                            setSenha('senha123');
+                            setSenha(cred.cpf === '000.000.000-00' ? 'Admin@123' : 'Senha@123');
                           }}
                           className="w-full p-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-primary-50 dark:hover:bg-primary-900/20 border border-transparent hover:border-primary-200 dark:hover:border-primary-800 transition-all text-left group"
                         >
@@ -288,7 +288,9 @@ const LoginPage: React.FC = () => {
                         </motion.button>
                       ))}
                       <p className="text-center text-xs text-slate-500 dark:text-slate-400 mt-3">
-                        Senha para todos: <code className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-mono">senha123</code>
+                        Admin: <code className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-mono">Admin@123</code>
+                        {' | '}
+                        Outros: <code className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-mono">Senha@123</code>
                       </p>
                     </div>
                   </motion.div>

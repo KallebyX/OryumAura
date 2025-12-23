@@ -481,12 +481,12 @@ async function seedDatabase() {
     const adminExists = await sql`SELECT id FROM users WHERE cpf = '00000000000'`;
 
     if (adminExists.length === 0) {
-      const hashedPassword = await bcrypt.hash('admin123', 10);
+      const hashedPassword = await bcrypt.hash('Admin@123', 10);
       await sql`
         INSERT INTO users (cpf, name, password_hash, role, email)
         VALUES ('00000000000', 'Administrador', ${hashedPassword}, 'secretaria', 'admin@oryumaura.com')
       `;
-      console.log('✅ Usuario admin criado (CPF: 00000000000, Senha: admin123)');
+      console.log('✅ Usuario admin criado (CPF: 00000000000, Senha: Admin@123)');
     } else {
       console.log('ℹ️ Usuario admin ja existe');
     }
@@ -494,23 +494,23 @@ async function seedDatabase() {
     // Usuario servidor
     const serverExists = await sql`SELECT id FROM users WHERE cpf = '11122233344'`;
     if (serverExists.length === 0) {
-      const hashedPassword = await bcrypt.hash('Senha123', 10);
+      const hashedPassword = await bcrypt.hash('Senha@123', 10);
       await sql`
         INSERT INTO users (cpf, name, password_hash, role, email)
         VALUES ('11122233344', 'Maria Servidor', ${hashedPassword}, 'servidor', 'servidor@oryumaura.com')
       `;
-      console.log('✅ Usuario servidor criado (CPF: 11122233344, Senha: Senha123)');
+      console.log('✅ Usuario servidor criado (CPF: 11122233344, Senha: Senha@123)');
     }
 
     // Usuario beneficiario
     const benefExists = await sql`SELECT id FROM users WHERE cpf = '55566677788'`;
     if (benefExists.length === 0) {
-      const hashedPassword = await bcrypt.hash('Senha123', 10);
+      const hashedPassword = await bcrypt.hash('Senha@123', 10);
       await sql`
         INSERT INTO users (cpf, name, password_hash, role, email)
         VALUES ('55566677788', 'Joao Beneficiario', ${hashedPassword}, 'beneficiario', 'beneficiario@oryumaura.com')
       `;
-      console.log('✅ Usuario beneficiario criado (CPF: 55566677788, Senha: Senha123)');
+      console.log('✅ Usuario beneficiario criado (CPF: 55566677788, Senha: Senha@123)');
     }
 
     // Programas padrao
@@ -541,9 +541,9 @@ async function seedDatabase() {
 
     console.log('\n🎉 Seed do banco concluido!');
     console.log('\n📝 Usuarios disponiveis:');
-    console.log('   - Admin: CPF 00000000000 / Senha: admin123');
-    console.log('   - Servidor: CPF 11122233344 / Senha: Senha123');
-    console.log('   - Beneficiario: CPF 55566677788 / Senha: Senha123');
+    console.log('   - Admin: CPF 00000000000 / Senha: Admin@123');
+    console.log('   - Servidor: CPF 11122233344 / Senha: Senha@123');
+    console.log('   - Beneficiario: CPF 55566677788 / Senha: Senha@123');
 
   } catch (error) {
     console.error('❌ Erro no seed:', error);

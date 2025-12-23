@@ -593,19 +593,19 @@ export async function seedNeonDatabase(logger) {
     const adminExists = await sql`SELECT id FROM users WHERE cpf = '00000000000'`;
 
     if (adminExists.length === 0) {
-      const hashedPassword = await bcrypt.default.hash('admin123', 10);
+      const hashedPassword = await bcrypt.default.hash('Admin@123', 10);
 
       await sql`
         INSERT INTO users (cpf, name, password_hash, role, email)
         VALUES ('00000000000', 'Administrador', ${hashedPassword}, 'secretaria', 'admin@oryumaura.com')
       `;
-      logger.info('✅ Usuário admin padrão criado (CPF: 00000000000, Senha: admin123)');
+      logger.info('✅ Usuário admin padrão criado (CPF: 00000000000, Senha: Admin@123)');
     }
 
     // Adiciona usuários de teste
     const serverExists = await sql`SELECT id FROM users WHERE cpf = '11122233344'`;
     if (serverExists.length === 0) {
-      const hashedPassword = await bcrypt.default.hash('Senha123', 10);
+      const hashedPassword = await bcrypt.default.hash('Senha@123', 10);
       await sql`
         INSERT INTO users (cpf, name, password_hash, role, email)
         VALUES ('11122233344', 'Maria Servidor', ${hashedPassword}, 'servidor', 'servidor@oryumaura.com')
@@ -615,7 +615,7 @@ export async function seedNeonDatabase(logger) {
 
     const benefExists = await sql`SELECT id FROM users WHERE cpf = '55566677788'`;
     if (benefExists.length === 0) {
-      const hashedPassword = await bcrypt.default.hash('Senha123', 10);
+      const hashedPassword = await bcrypt.default.hash('Senha@123', 10);
       await sql`
         INSERT INTO users (cpf, name, password_hash, role, email)
         VALUES ('55566677788', 'João Beneficiário', ${hashedPassword}, 'beneficiario', 'beneficiario@oryumaura.com')

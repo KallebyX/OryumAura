@@ -353,8 +353,13 @@ db.serialize(() => {
     name TEXT NOT NULL,
     cpf TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
-    role TEXT CHECK(role IN ('secretaria', 'servidor', 'beneficiario')) NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    role TEXT CHECK(role IN ('secretaria', 'servidor', 'coordenador', 'beneficiario')) NOT NULL,
+    email TEXT UNIQUE,
+    phone TEXT,
+    address TEXT,
+    birth_date TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
   db.run(`CREATE TABLE IF NOT EXISTS refresh_tokens (
@@ -1025,6 +1030,246 @@ app.get('/api/profile', authenticateToken, (req, res) => {
         name: req.user.name,
         role: req.user.role
     });
+});
+
+// ====================================================================
+// ROTA DE REGISTRO DE USUÁRIOS
+// ====================================================================
+
+/**
+ * POST /api/register
+ * Registra um novo usuário no sistema
+ */
+app.post('/api/register', authLimiter, [
+  body('cpf').notEmpty().withMessage('CPF é obrigatório').isLength({ min: 11, max: 11 }).withMessage('CPF deve ter 11 dígitos'),
+  body('name').notEmpty().withMessage('Nome é obrigatório').isLength({ min: 3 }).withMessage('Nome deve ter no mínimo 3 caracteres'),
+  body('senha').isLength({ min: 8 }).withMessage('Senha deve ter no mínimo 8 caracteres')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage('Senha deve conter letras maiúsculas, minúsculas e números'),
+  body('role').optional().isIn(['beneficiario', 'servidor', 'coordenador', 'secretaria']).withMessage('Cargo inválido')
+], validateRequest, async (req, res) => {
+  const { cpf, name, senha, email, phone, role = 'beneficiario' } = req.body;
+
+  try {
+    // Verifica se o CPF já está cadastrado
+    const existingUser = await dbGet("SELECT id FROM users WHERE cpf = ?", [cpf]);
+    if (existingUser) {
+      return res.status(400).json({ error: 'CPF já cadastrado no sistema.' });
+    }
+
+    // Verifica se o email já está cadastrado (se fornecido)
+    if (email) {
+      const existingEmail = await dbGet("SELECT id FROM users WHERE email = ?", [email]);
+      if (existingEmail) {
+        return res.status(400).json({ error: 'Email já cadastrado no sistema.' });
+      }
+    }
+
+    // Criptografa a senha
+    const hashedPassword = await bcrypt.hash(senha, 10);
+
+    // Insere o novo usuário
+    const sql = `INSERT INTO users (cpf, name, password_hash, role, email, phone) VALUES (?, ?, ?, ?, ?, ?)`;
+    const result = await dbRun(sql, [cpf, name, hashedPassword, role, email || null, phone || null]);
+
+    logger.info(`Novo usuário registrado: ${name} (${cpf}) - Role: ${role}`);
+
+    // Gera tokens para login automático
+    const newUser = await dbGet("SELECT * FROM users WHERE id = ?", [result.lastID]);
+
+    const access_token = jwt.sign(
+      { id: newUser.id, cpf: newUser.cpf, role: newUser.role, name: newUser.name },
+      JWT_SECRET,
+      { expiresIn: '15m' }
+    );
+
+    const refresh_token = await generateRefreshToken(
+      newUser.id,
+      req.ip,
+      req.get('user-agent')
+    );
+
+    res.status(201).json({
+      message: 'Usuário registrado com sucesso!',
+      access_token,
+      refresh_token,
+      expires_in: 900,
+      token_type: 'Bearer',
+      user: {
+        id: newUser.id,
+        name: newUser.name,
+        cpf: newUser.cpf,
+        role: newUser.role
+      }
+    });
+  } catch (error) {
+    logger.error('Erro ao registrar usuário:', error);
+    return res.status(500).json({ error: 'Erro ao processar registro.' });
+  }
+});
+
+// ====================================================================
+// ROTA DE MIGRAÇÃO VIA HTTP (para Vercel/Neon)
+// ====================================================================
+
+/**
+ * GET /api/migrate
+ * Executa as migrações do banco de dados via HTTP
+ * Útil para Vercel onde não há acesso ao terminal
+ */
+app.get('/api/migrate', async (req, res) => {
+  const secret = req.query.secret;
+  const MIGRATION_SECRET = process.env.MIGRATION_SECRET || process.env.JWT_SECRET;
+
+  // Proteção básica - requer secret para executar
+  if (secret !== MIGRATION_SECRET) {
+    return res.status(401).json({ error: 'Secret inválido. Use ?secret=SEU_JWT_SECRET' });
+  }
+
+  try {
+    const results = [];
+
+    if (DB_TYPE === 'neon' || DB_TYPE === 'postgres') {
+      results.push('Iniciando migração para Neon/Postgres...');
+
+      // Re-executa createNeonTables e seedNeonDatabase
+      await createNeonTables(logger);
+      results.push('✅ Tabelas criadas/verificadas');
+
+      await seedNeonDatabase(logger);
+      results.push('✅ Seed executado');
+
+      // Verifica se os usuários existem
+      const users = await dbAll("SELECT id, cpf, name, role FROM users");
+      results.push(`📊 Total de usuários: ${users.length}`);
+      users.forEach(u => results.push(`   - ${u.name} (${u.cpf}) - ${u.role}`));
+
+    } else {
+      results.push('SQLite - migrações executadas na inicialização');
+    }
+
+    res.json({
+      success: true,
+      database_type: DB_TYPE,
+      results
+    });
+  } catch (error) {
+    logger.error('Erro na migração:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/migrate/seed
+ * Força o seed do banco de dados
+ */
+app.post('/api/migrate/seed', async (req, res) => {
+  const secret = req.query.secret || req.body.secret;
+  const MIGRATION_SECRET = process.env.MIGRATION_SECRET || process.env.JWT_SECRET;
+
+  if (secret !== MIGRATION_SECRET) {
+    return res.status(401).json({ error: 'Secret inválido' });
+  }
+
+  try {
+    const results = [];
+
+    // Cria usuário admin se não existir
+    const adminExists = await dbGet("SELECT id FROM users WHERE cpf = ?", ['00000000000']);
+
+    if (!adminExists) {
+      const hashedPassword = await bcrypt.hash('Admin@123', 10);
+      await dbRun(`INSERT INTO users (cpf, name, password_hash, role, email) VALUES (?, ?, ?, ?, ?)`,
+        ['00000000000', 'Administrador', hashedPassword, 'secretaria', 'admin@oryumaura.com']);
+      results.push('✅ Admin criado (CPF: 00000000000, Senha: Admin@123)');
+    } else {
+      results.push('ℹ️ Admin já existe');
+    }
+
+    // Cria servidor se não existir
+    const serverExists = await dbGet("SELECT id FROM users WHERE cpf = ?", ['11122233344']);
+    if (!serverExists) {
+      const hashedPassword = await bcrypt.hash('Senha@123', 10);
+      await dbRun(`INSERT INTO users (cpf, name, password_hash, role, email) VALUES (?, ?, ?, ?, ?)`,
+        ['11122233344', 'Maria Servidor', hashedPassword, 'servidor', 'servidor@oryumaura.com']);
+      results.push('✅ Servidor criado (CPF: 11122233344, Senha: Senha@123)');
+    } else {
+      results.push('ℹ️ Servidor já existe');
+    }
+
+    // Cria beneficiário se não existir
+    const benefExists = await dbGet("SELECT id FROM users WHERE cpf = ?", ['55566677788']);
+    if (!benefExists) {
+      const hashedPassword = await bcrypt.hash('Senha@123', 10);
+      await dbRun(`INSERT INTO users (cpf, name, password_hash, role, email) VALUES (?, ?, ?, ?, ?)`,
+        ['55566677788', 'João Beneficiário', hashedPassword, 'beneficiario', 'beneficiario@oryumaura.com']);
+      results.push('✅ Beneficiário criado (CPF: 55566677788, Senha: Senha@123)');
+    } else {
+      results.push('ℹ️ Beneficiário já existe');
+    }
+
+    // Lista todos os usuários
+    const users = await dbAll("SELECT id, cpf, name, role FROM users");
+    results.push(`\n📊 Total de usuários: ${users.length}`);
+
+    res.json({
+      success: true,
+      results,
+      users
+    });
+  } catch (error) {
+    logger.error('Erro no seed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/migrate/reset-password
+ * Reseta a senha de um usuário para uma senha padrão
+ */
+app.post('/api/migrate/reset-password', async (req, res) => {
+  const secret = req.query.secret || req.body.secret;
+  const MIGRATION_SECRET = process.env.MIGRATION_SECRET || process.env.JWT_SECRET;
+
+  if (secret !== MIGRATION_SECRET) {
+    return res.status(401).json({ error: 'Secret inválido' });
+  }
+
+  const { cpf, newPassword = 'Admin@123' } = req.body;
+
+  if (!cpf) {
+    return res.status(400).json({ error: 'CPF é obrigatório' });
+  }
+
+  try {
+    const user = await dbGet("SELECT id, name FROM users WHERE cpf = ?", [cpf]);
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await dbRun("UPDATE users SET password_hash = ? WHERE cpf = ?", [hashedPassword, cpf]);
+
+    logger.info(`Senha resetada para usuário: ${user.name} (${cpf})`);
+
+    res.json({
+      success: true,
+      message: `Senha resetada para ${user.name}`,
+      newPassword: newPassword
+    });
+  } catch (error) {
+    logger.error('Erro ao resetar senha:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 });
 
 
