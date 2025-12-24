@@ -121,6 +121,29 @@ app.use(cors({
 
 app.use(express.json({ limit: '10mb' }));
 
+// Função para extrair IP do cliente em ambientes serverless (Vercel, etc)
+// Lida com headers Forwarded e X-Forwarded-For
+const getClientIp = (req) => {
+  // Verifica o header X-Forwarded-For (comum em proxies reversos)
+  const xForwardedFor = req.headers['x-forwarded-for'];
+  if (xForwardedFor) {
+    // Pega o primeiro IP da lista (IP original do cliente)
+    return xForwardedFor.split(',')[0].trim();
+  }
+
+  // Verifica o header Forwarded (RFC 7239)
+  const forwarded = req.headers['forwarded'];
+  if (forwarded) {
+    const match = forwarded.match(/for="?([^";,\s]+)"?/i);
+    if (match) {
+      return match[1];
+    }
+  }
+
+  // Fallback para o IP da conexão
+  return req.ip || req.connection?.remoteAddress || '127.0.0.1';
+};
+
 // Rate Limiting - Proteção contra ataques de força bruta
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutos
@@ -128,6 +151,10 @@ const limiter = rateLimit({
   message: { error: 'Muitas requisições. Por favor, tente novamente mais tarde.' },
   standardHeaders: true,
   legacyHeaders: false,
+  // Custom keyGenerator para funcionar corretamente em serverless (Vercel)
+  keyGenerator: getClientIp,
+  // Desabilita validação do header Forwarded (já tratamos manualmente)
+  validate: { xForwardedForHeader: false }
 });
 
 // Rate limiting mais restritivo para autenticação
@@ -135,7 +162,11 @@ const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 5, // 5 tentativas
   message: { error: 'Muitas tentativas de login. Por favor, aguarde 15 minutos.' },
-  skipSuccessfulRequests: true
+  skipSuccessfulRequests: true,
+  // Custom keyGenerator para funcionar corretamente em serverless (Vercel)
+  keyGenerator: getClientIp,
+  // Desabilita validação do header Forwarded (já tratamos manualmente)
+  validate: { xForwardedForHeader: false }
 });
 
 app.use('/api/', limiter);
