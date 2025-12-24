@@ -1750,602 +1750,662 @@ app.delete('/api/appointments/:id', authenticateToken, async (req, res) => {
 
 // === ROTAS MÓDULO CRAS - VISITAS DOMICILIARES ===
 
-app.get('/api/home-visits', authenticateToken, (req, res) => {
-  const { beneficiary_id, server_id, status } = req.query;
-  let sql = `
-    SELECT hv.*, b.name as beneficiary_name, u.name as server_name
-    FROM home_visits hv
-    JOIN beneficiaries b ON hv.beneficiary_id = b.id
-    JOIN users u ON hv.server_id = u.id
-    WHERE 1=1
-  `;
-  const params = [];
+app.get('/api/home-visits', authenticateToken, async (req, res) => {
+  try {
+    const { beneficiary_id, server_id, status } = req.query;
+    let sql = `
+      SELECT hv.*, b.name as beneficiary_name, u.name as server_name
+      FROM home_visits hv
+      JOIN beneficiaries b ON hv.beneficiary_id = b.id
+      JOIN users u ON hv.server_id = u.id
+      WHERE 1=1
+    `;
+    const params = [];
 
-  if (beneficiary_id) {
-    sql += ' AND hv.beneficiary_id = ?';
-    params.push(beneficiary_id);
-  }
-  if (server_id) {
-    sql += ' AND hv.server_id = ?';
-    params.push(server_id);
-  }
-  if (status) {
-    sql += ' AND hv.status = ?';
-    params.push(status);
-  }
+    if (beneficiary_id) {
+      sql += ' AND hv.beneficiary_id = ?';
+      params.push(beneficiary_id);
+    }
+    if (server_id) {
+      sql += ' AND hv.server_id = ?';
+      params.push(server_id);
+    }
+    if (status) {
+      sql += ' AND hv.status = ?';
+      params.push(status);
+    }
 
-  sql += ' ORDER BY hv.visit_date DESC';
+    sql += ' ORDER BY hv.visit_date DESC';
 
-  db.all(sql, params, (err, rows) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+    const rows = await dbAll(sql, params);
     res.json({ "message": "success", "data": rows });
-  });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.post('/api/home-visits', authenticateToken, (req, res) => {
-  const { beneficiary_id, visit_date, address, latitude, longitude, observations, family_composition, housing_conditions, sanitation, vulnerabilities } = req.body;
-  const server_id = req.user.id;
-  const sql = `INSERT INTO home_visits (beneficiary_id, server_id, visit_date, address, latitude, longitude, observations, family_composition, housing_conditions, sanitation, vulnerabilities) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-  const params = [beneficiary_id, server_id, visit_date, address, latitude, longitude, observations, family_composition, housing_conditions, sanitation, vulnerabilities];
+app.post('/api/home-visits', authenticateToken, async (req, res) => {
+  try {
+    const { beneficiary_id, visit_date, address, latitude, longitude, observations, family_composition, housing_conditions, sanitation, vulnerabilities } = req.body;
+    const server_id = req.user.id;
+    const sql = `INSERT INTO home_visits (beneficiary_id, server_id, visit_date, address, latitude, longitude, observations, family_composition, housing_conditions, sanitation, vulnerabilities) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const params = [beneficiary_id, server_id, visit_date, address, latitude, longitude, observations, family_composition, housing_conditions, sanitation, vulnerabilities];
 
-  db.run(sql, params, function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
-    auditLog(req, 'CREATE', 'home_visits', this.lastID, { beneficiary_id, visit_date });
-    res.status(201).json({ "message": "success", "data": { id: this.lastID, ...req.body, server_id } });
-  });
+    const result = await dbRun(sql, params);
+    auditLog(req, 'CREATE', 'home_visits', result.lastID, { beneficiary_id, visit_date });
+    res.status(201).json({ "message": "success", "data": { id: result.lastID, ...req.body, server_id } });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.put('/api/home-visits/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  const { status, observations, family_composition, housing_conditions, sanitation, vulnerabilities, photos } = req.body;
-  const fields = [], params = [];
+app.put('/api/home-visits/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, observations, family_composition, housing_conditions, sanitation, vulnerabilities, photos } = req.body;
+    const fields = [], params = [];
 
-  if (status !== undefined) { fields.push("status = ?"); params.push(status); }
-  if (observations !== undefined) { fields.push("observations = ?"); params.push(observations); }
-  if (family_composition !== undefined) { fields.push("family_composition = ?"); params.push(family_composition); }
-  if (housing_conditions !== undefined) { fields.push("housing_conditions = ?"); params.push(housing_conditions); }
-  if (sanitation !== undefined) { fields.push("sanitation = ?"); params.push(sanitation); }
-  if (vulnerabilities !== undefined) { fields.push("vulnerabilities = ?"); params.push(vulnerabilities); }
-  if (photos !== undefined) { fields.push("photos = ?"); params.push(photos); }
+    if (status !== undefined) { fields.push("status = ?"); params.push(status); }
+    if (observations !== undefined) { fields.push("observations = ?"); params.push(observations); }
+    if (family_composition !== undefined) { fields.push("family_composition = ?"); params.push(family_composition); }
+    if (housing_conditions !== undefined) { fields.push("housing_conditions = ?"); params.push(housing_conditions); }
+    if (sanitation !== undefined) { fields.push("sanitation = ?"); params.push(sanitation); }
+    if (vulnerabilities !== undefined) { fields.push("vulnerabilities = ?"); params.push(vulnerabilities); }
+    if (photos !== undefined) { fields.push("photos = ?"); params.push(photos); }
 
-  if (fields.length === 0) { return res.status(400).json({ "error": "Nenhum campo para atualizar fornecido." }); }
-  params.push(id);
+    if (fields.length === 0) { return res.status(400).json({ "error": "Nenhum campo para atualizar fornecido." }); }
+    params.push(id);
 
-  const sql = `UPDATE home_visits SET ${fields.join(', ')} WHERE id = ?`;
-  db.run(sql, params, function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+    const sql = `UPDATE home_visits SET ${fields.join(', ')} WHERE id = ?`;
+    const result = await dbRun(sql, params);
     auditLog(req, 'UPDATE', 'home_visits', id);
-    res.json({ "message": "success", "changes": this.changes });
-  });
+    res.json({ "message": "success", "changes": result.changes });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
 
 // === ROTAS MÓDULO CRAS - ATIVIDADES PAIF ===
 
-app.get('/api/paif-activities', authenticateToken, (req, res) => {
-  const { status, date_from, date_to } = req.query;
-  let sql = `SELECT pa.*, u.name as responsible_name FROM paif_activities pa LEFT JOIN users u ON pa.responsible_server_id = u.id WHERE 1=1`;
-  const params = [];
+app.get('/api/paif-activities', authenticateToken, async (req, res) => {
+  try {
+    const { status, date_from, date_to } = req.query;
+    let sql = `SELECT pa.*, u.name as responsible_name FROM paif_activities pa LEFT JOIN users u ON pa.responsible_server_id = u.id WHERE 1=1`;
+    const params = [];
 
-  if (status) {
-    sql += ' AND pa.status = ?';
-    params.push(status);
-  }
-  if (date_from) {
-    sql += ' AND pa.date >= ?';
-    params.push(date_from);
-  }
-  if (date_to) {
-    sql += ' AND pa.date <= ?';
-    params.push(date_to);
-  }
+    if (status) {
+      sql += ' AND pa.status = ?';
+      params.push(status);
+    }
+    if (date_from) {
+      sql += ' AND pa.date >= ?';
+      params.push(date_from);
+    }
+    if (date_to) {
+      sql += ' AND pa.date <= ?';
+      params.push(date_to);
+    }
 
-  sql += ' ORDER BY pa.date DESC';
+    sql += ' ORDER BY pa.date DESC';
 
-  db.all(sql, params, (err, rows) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+    const rows = await dbAll(sql, params);
     res.json({ "message": "success", "data": rows });
-  });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.post('/api/paif-activities', authenticateToken, (req, res) => {
-  const { title, description, activity_type, date, location, max_participants } = req.body;
-  const responsible_server_id = req.user.id;
-  const sql = `INSERT INTO paif_activities (title, description, activity_type, date, location, responsible_server_id, max_participants) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-  const params = [title, description, activity_type, date, location, responsible_server_id, max_participants];
+app.post('/api/paif-activities', authenticateToken, async (req, res) => {
+  try {
+    const { title, description, activity_type, date, location, max_participants } = req.body;
+    const responsible_server_id = req.user.id;
+    const sql = `INSERT INTO paif_activities (title, description, activity_type, date, location, responsible_server_id, max_participants) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+    const params = [title, description, activity_type, date, location, responsible_server_id, max_participants];
 
-  db.run(sql, params, function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
-    auditLog(req, 'CREATE', 'paif_activities', this.lastID, { title, date });
-    res.status(201).json({ "message": "success", "data": { id: this.lastID, ...req.body, responsible_server_id } });
-  });
+    const result = await dbRun(sql, params);
+    auditLog(req, 'CREATE', 'paif_activities', result.lastID, { title, date });
+    res.status(201).json({ "message": "success", "data": { id: result.lastID, ...req.body, responsible_server_id } });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.get('/api/paif-activities/:id/participants', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  const sql = `
-    SELECT pp.*, b.name, b.cpf
-    FROM paif_participants pp
-    JOIN beneficiaries b ON pp.beneficiary_id = b.id
-    WHERE pp.activity_id = ?
-  `;
-  db.all(sql, [id], (err, rows) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+app.get('/api/paif-activities/:id/participants', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const sql = `
+      SELECT pp.*, b.name, b.cpf
+      FROM paif_participants pp
+      JOIN beneficiaries b ON pp.beneficiary_id = b.id
+      WHERE pp.activity_id = ?
+    `;
+    const rows = await dbAll(sql, [id]);
     res.json({ "message": "success", "data": rows });
-  });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.post('/api/paif-activities/:id/participants', authenticateToken, (req, res) => {
-  const { id: activity_id } = req.params;
-  const { beneficiary_id, attendance, notes } = req.body;
-  const sql = `INSERT INTO paif_participants (activity_id, beneficiary_id, attendance, notes) VALUES (?, ?, ?, ?)`;
+app.post('/api/paif-activities/:id/participants', authenticateToken, async (req, res) => {
+  try {
+    const { id: activity_id } = req.params;
+    const { beneficiary_id, attendance, notes } = req.body;
+    const sql = `INSERT INTO paif_participants (activity_id, beneficiary_id, attendance, notes) VALUES (?, ?, ?, ?)`;
 
-  db.run(sql, [activity_id, beneficiary_id, attendance, notes], function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+    const result = await dbRun(sql, [activity_id, beneficiary_id, attendance, notes]);
     auditLog(req, 'ADD_PARTICIPANT', 'paif_participants', null, { activity_id, beneficiary_id });
     res.status(201).json({ "message": "success" });
-  });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
 
 // === ROTAS MÓDULO CRAS - SCFV ===
 
-app.get('/api/scfv-enrollments', authenticateToken, (req, res) => {
-  const { beneficiary_id, status, age_group } = req.query;
-  let sql = `
-    SELECT se.*, b.name as beneficiary_name, b.birth_date
-    FROM scfv_enrollments se
-    JOIN beneficiaries b ON se.beneficiary_id = b.id
-    WHERE 1=1
-  `;
-  const params = [];
+app.get('/api/scfv-enrollments', authenticateToken, async (req, res) => {
+  try {
+    const { beneficiary_id, status, age_group } = req.query;
+    let sql = `
+      SELECT se.*, b.name as beneficiary_name, b.birth_date
+      FROM scfv_enrollments se
+      JOIN beneficiaries b ON se.beneficiary_id = b.id
+      WHERE 1=1
+    `;
+    const params = [];
 
-  if (beneficiary_id) {
-    sql += ' AND se.beneficiary_id = ?';
-    params.push(beneficiary_id);
-  }
-  if (status) {
-    sql += ' AND se.status = ?';
-    params.push(status);
-  }
-  if (age_group) {
-    sql += ' AND se.age_group = ?';
-    params.push(age_group);
-  }
+    if (beneficiary_id) {
+      sql += ' AND se.beneficiary_id = ?';
+      params.push(beneficiary_id);
+    }
+    if (status) {
+      sql += ' AND se.status = ?';
+      params.push(status);
+    }
+    if (age_group) {
+      sql += ' AND se.age_group = ?';
+      params.push(age_group);
+    }
 
-  sql += ' ORDER BY se.enrollment_date DESC';
+    sql += ' ORDER BY se.enrollment_date DESC';
 
-  db.all(sql, params, (err, rows) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+    const rows = await dbAll(sql, params);
     res.json({ "message": "success", "data": rows });
-  });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.post('/api/scfv-enrollments', authenticateToken, (req, res) => {
-  const { beneficiary_id, age_group, observations } = req.body;
-  const sql = `INSERT INTO scfv_enrollments (beneficiary_id, age_group, observations) VALUES (?, ?, ?)`;
+app.post('/api/scfv-enrollments', authenticateToken, async (req, res) => {
+  try {
+    const { beneficiary_id, age_group, observations } = req.body;
+    const sql = `INSERT INTO scfv_enrollments (beneficiary_id, age_group, observations) VALUES (?, ?, ?)`;
 
-  db.run(sql, [beneficiary_id, age_group, observations], function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
-    auditLog(req, 'CREATE', 'scfv_enrollments', this.lastID, { beneficiary_id, age_group });
-    res.status(201).json({ "message": "success", "data": { id: this.lastID, ...req.body } });
-  });
+    const result = await dbRun(sql, [beneficiary_id, age_group, observations]);
+    auditLog(req, 'CREATE', 'scfv_enrollments', result.lastID, { beneficiary_id, age_group });
+    res.status(201).json({ "message": "success", "data": { id: result.lastID, ...req.body } });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
 
 // === ROTAS MÓDULO CREAS - CASOS ===
 
-app.get('/api/creas-cases', authenticateToken, (req, res) => {
-  const { beneficiary_id, status, case_type, severity } = req.query;
-  let sql = `
-    SELECT cc.*, b.name as beneficiary_name, b.cpf, u.name as responsible_name
-    FROM creas_cases cc
-    JOIN beneficiaries b ON cc.beneficiary_id = b.id
-    LEFT JOIN users u ON cc.responsible_server_id = u.id
-    WHERE 1=1
-  `;
-  const params = [];
+app.get('/api/creas-cases', authenticateToken, async (req, res) => {
+  try {
+    const { beneficiary_id, status, case_type, severity } = req.query;
+    let sql = `
+      SELECT cc.*, b.name as beneficiary_name, b.cpf, u.name as responsible_name
+      FROM creas_cases cc
+      JOIN beneficiaries b ON cc.beneficiary_id = b.id
+      LEFT JOIN users u ON cc.responsible_server_id = u.id
+      WHERE 1=1
+    `;
+    const params = [];
 
-  if (beneficiary_id) {
-    sql += ' AND cc.beneficiary_id = ?';
-    params.push(beneficiary_id);
-  }
-  if (status) {
-    sql += ' AND cc.status = ?';
-    params.push(status);
-  }
-  if (case_type) {
-    sql += ' AND cc.case_type = ?';
-    params.push(case_type);
-  }
-  if (severity) {
-    sql += ' AND cc.severity = ?';
-    params.push(severity);
-  }
+    if (beneficiary_id) {
+      sql += ' AND cc.beneficiary_id = ?';
+      params.push(beneficiary_id);
+    }
+    if (status) {
+      sql += ' AND cc.status = ?';
+      params.push(status);
+    }
+    if (case_type) {
+      sql += ' AND cc.case_type = ?';
+      params.push(case_type);
+    }
+    if (severity) {
+      sql += ' AND cc.severity = ?';
+      params.push(severity);
+    }
 
-  sql += ' ORDER BY cc.opened_date DESC';
+    sql += ' ORDER BY cc.opened_date DESC';
 
-  db.all(sql, params, (err, rows) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+    const rows = await dbAll(sql, params);
     res.json({ "message": "success", "data": rows });
-  });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.get('/api/creas-cases/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  const sql = `
-    SELECT cc.*, b.name as beneficiary_name, b.cpf, b.birth_date, u.name as responsible_name
-    FROM creas_cases cc
-    JOIN beneficiaries b ON cc.beneficiary_id = b.id
-    LEFT JOIN users u ON cc.responsible_server_id = u.id
-    WHERE cc.id = ?
-  `;
-  db.get(sql, [id], (err, row) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+app.get('/api/creas-cases/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const sql = `
+      SELECT cc.*, b.name as beneficiary_name, b.cpf, b.birth_date, u.name as responsible_name
+      FROM creas_cases cc
+      JOIN beneficiaries b ON cc.beneficiary_id = b.id
+      LEFT JOIN users u ON cc.responsible_server_id = u.id
+      WHERE cc.id = ?
+    `;
+    const row = await dbGet(sql, [id]);
     if (row) {
       auditLog(req, 'VIEW', 'creas_cases', id);
       res.json({ "message": "success", "data": row });
     } else {
       res.status(404).json({ "message": "Caso não encontrado." });
     }
-  });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.post('/api/creas-cases', authenticateToken, (req, res) => {
-  const { beneficiary_id, case_type, severity, description } = req.body;
-  const responsible_server_id = req.user.id;
+app.post('/api/creas-cases', authenticateToken, async (req, res) => {
+  try {
+    const { beneficiary_id, case_type, severity, description } = req.body;
+    const responsible_server_id = req.user.id;
 
-  // Gera número do caso
-  const case_number = `CREAS-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    // Gera número do caso
+    const case_number = `CREAS-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-  const sql = `INSERT INTO creas_cases (beneficiary_id, case_number, case_type, severity, description, responsible_server_id) VALUES (?, ?, ?, ?, ?, ?)`;
-  const params = [beneficiary_id, case_number, case_type, severity, description, responsible_server_id];
+    const sql = `INSERT INTO creas_cases (beneficiary_id, case_number, case_type, severity, description, responsible_server_id) VALUES (?, ?, ?, ?, ?, ?)`;
+    const params = [beneficiary_id, case_number, case_type, severity, description, responsible_server_id];
 
-  db.run(sql, params, function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
-    auditLog(req, 'CREATE', 'creas_cases', this.lastID, { beneficiary_id, case_number, case_type });
-    res.status(201).json({ "message": "success", "data": { id: this.lastID, case_number, ...req.body, responsible_server_id } });
-  });
+    const result = await dbRun(sql, params);
+    auditLog(req, 'CREATE', 'creas_cases', result.lastID, { beneficiary_id, case_number, case_type });
+    res.status(201).json({ "message": "success", "data": { id: result.lastID, case_number, ...req.body, responsible_server_id } });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.put('/api/creas-cases/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  const { status, description, severity } = req.body;
-  const fields = [], params = [];
+app.put('/api/creas-cases/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, description, severity } = req.body;
+    const fields = [], params = [];
 
-  if (status !== undefined) { fields.push("status = ?"); params.push(status); }
-  if (description !== undefined) { fields.push("description = ?"); params.push(description); }
-  if (severity !== undefined) { fields.push("severity = ?"); params.push(severity); }
+    if (status !== undefined) { fields.push("status = ?"); params.push(status); }
+    if (description !== undefined) { fields.push("description = ?"); params.push(description); }
+    if (severity !== undefined) { fields.push("severity = ?"); params.push(severity); }
 
-  if (fields.length === 0) { return res.status(400).json({ "error": "Nenhum campo para atualizar fornecido." }); }
-  params.push(id);
+    if (fields.length === 0) { return res.status(400).json({ "error": "Nenhum campo para atualizar fornecido." }); }
+    params.push(id);
 
-  const sql = `UPDATE creas_cases SET ${fields.join(', ')} WHERE id = ?`;
-  db.run(sql, params, function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+    const sql = `UPDATE creas_cases SET ${fields.join(', ')} WHERE id = ?`;
+    const result = await dbRun(sql, params);
     auditLog(req, 'UPDATE', 'creas_cases', id, { status });
-    res.json({ "message": "success", "changes": this.changes });
-  });
+    res.json({ "message": "success", "changes": result.changes });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
 
 // === ROTAS MÓDULO CREAS - MEDIDAS PROTETIVAS ===
 
-app.get('/api/creas-cases/:case_id/protective-measures', authenticateToken, (req, res) => {
-  const { case_id } = req.params;
-  const sql = `SELECT * FROM protective_measures WHERE case_id = ? ORDER BY created_at DESC`;
-  db.all(sql, [case_id], (err, rows) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+app.get('/api/creas-cases/:case_id/protective-measures', authenticateToken, async (req, res) => {
+  try {
+    const { case_id } = req.params;
+    const sql = `SELECT * FROM protective_measures WHERE case_id = ? ORDER BY created_at DESC`;
+    const rows = await dbAll(sql, [case_id]);
     res.json({ "message": "success", "data": rows });
-  });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.post('/api/creas-cases/:case_id/protective-measures', authenticateToken, (req, res) => {
-  const { case_id } = req.params;
-  const { measure_type, description, institution, start_date, end_date } = req.body;
-  const sql = `INSERT INTO protective_measures (case_id, measure_type, description, institution, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?)`;
+app.post('/api/creas-cases/:case_id/protective-measures', authenticateToken, async (req, res) => {
+  try {
+    const { case_id } = req.params;
+    const { measure_type, description, institution, start_date, end_date } = req.body;
+    const sql = `INSERT INTO protective_measures (case_id, measure_type, description, institution, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?)`;
 
-  db.run(sql, [case_id, measure_type, description, institution, start_date, end_date], function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
-    auditLog(req, 'CREATE', 'protective_measures', this.lastID, { case_id, measure_type });
-    res.status(201).json({ "message": "success", "data": { id: this.lastID, ...req.body } });
-  });
+    const result = await dbRun(sql, [case_id, measure_type, description, institution, start_date, end_date]);
+    auditLog(req, 'CREATE', 'protective_measures', result.lastID, { case_id, measure_type });
+    res.status(201).json({ "message": "success", "data": { id: result.lastID, ...req.body } });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
 
 // === ROTAS MÓDULO CREAS - PRAZOS JUDICIAIS ===
 
-app.get('/api/creas-cases/:case_id/deadlines', authenticateToken, (req, res) => {
-  const { case_id } = req.params;
-  const sql = `SELECT * FROM case_deadlines WHERE case_id = ? ORDER BY deadline_date ASC`;
-  db.all(sql, [case_id], (err, rows) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+app.get('/api/creas-cases/:case_id/deadlines', authenticateToken, async (req, res) => {
+  try {
+    const { case_id } = req.params;
+    const sql = `SELECT * FROM case_deadlines WHERE case_id = ? ORDER BY deadline_date ASC`;
+    const rows = await dbAll(sql, [case_id]);
     res.json({ "message": "success", "data": rows });
-  });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.post('/api/creas-cases/:case_id/deadlines', authenticateToken, (req, res) => {
-  const { case_id } = req.params;
-  const { deadline_type, deadline_date, description } = req.body;
-  const sql = `INSERT INTO case_deadlines (case_id, deadline_type, deadline_date, description) VALUES (?, ?, ?, ?)`;
+app.post('/api/creas-cases/:case_id/deadlines', authenticateToken, async (req, res) => {
+  try {
+    const { case_id } = req.params;
+    const { deadline_type, deadline_date, description } = req.body;
+    const sql = `INSERT INTO case_deadlines (case_id, deadline_type, deadline_date, description) VALUES (?, ?, ?, ?)`;
 
-  db.run(sql, [case_id, deadline_type, deadline_date, description], function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
-    auditLog(req, 'CREATE', 'case_deadlines', this.lastID, { case_id, deadline_type });
-    res.status(201).json({ "message": "success", "data": { id: this.lastID, ...req.body } });
-  });
+    const result = await dbRun(sql, [case_id, deadline_type, deadline_date, description]);
+    auditLog(req, 'CREATE', 'case_deadlines', result.lastID, { case_id, deadline_type });
+    res.status(201).json({ "message": "success", "data": { id: result.lastID, ...req.body } });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.get('/api/case-deadlines/upcoming', authenticateToken, (req, res) => {
-  const sql = `
-    SELECT cd.*, cc.case_number, cc.case_type, b.name as beneficiary_name
-    FROM case_deadlines cd
-    JOIN creas_cases cc ON cd.case_id = cc.id
-    JOIN beneficiaries b ON cc.beneficiary_id = b.id
-    WHERE cd.status = 'Pendente' AND cd.deadline_date >= date('now')
-    ORDER BY cd.deadline_date ASC
-    LIMIT 20
-  `;
-  db.all(sql, [], (err, rows) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+app.get('/api/case-deadlines/upcoming', authenticateToken, async (req, res) => {
+  try {
+    const sql = `
+      SELECT cd.*, cc.case_number, cc.case_type, b.name as beneficiary_name
+      FROM case_deadlines cd
+      JOIN creas_cases cc ON cd.case_id = cc.id
+      JOIN beneficiaries b ON cc.beneficiary_id = b.id
+      WHERE cd.status = 'Pendente' AND cd.deadline_date >= date('now')
+      ORDER BY cd.deadline_date ASC
+      LIMIT 20
+    `;
+    const rows = await dbAll(sql, []);
     res.json({ "message": "success", "data": rows });
-  });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
 
 // === ROTAS MÓDULO BENEFÍCIOS EVENTUAIS ===
 
-app.get('/api/eventual-benefits', authenticateToken, (req, res) => {
-  const { beneficiary_id, benefit_type, status } = req.query;
-  let sql = `
-    SELECT eb.*, b.name as beneficiary_name, b.cpf
-    FROM eventual_benefits eb
-    JOIN beneficiaries b ON eb.beneficiary_id = b.id
-    WHERE 1=1
-  `;
-  const params = [];
+app.get('/api/eventual-benefits', authenticateToken, async (req, res) => {
+  try {
+    const { beneficiary_id, benefit_type, status } = req.query;
+    let sql = `
+      SELECT eb.*, b.name as beneficiary_name, b.cpf
+      FROM eventual_benefits eb
+      JOIN beneficiaries b ON eb.beneficiary_id = b.id
+      WHERE 1=1
+    `;
+    const params = [];
 
-  if (beneficiary_id) {
-    sql += ' AND eb.beneficiary_id = ?';
-    params.push(beneficiary_id);
-  }
-  if (benefit_type) {
-    sql += ' AND eb.benefit_type = ?';
-    params.push(benefit_type);
-  }
-  if (status) {
-    sql += ' AND eb.status = ?';
-    params.push(status);
-  }
+    if (beneficiary_id) {
+      sql += ' AND eb.beneficiary_id = ?';
+      params.push(beneficiary_id);
+    }
+    if (benefit_type) {
+      sql += ' AND eb.benefit_type = ?';
+      params.push(benefit_type);
+    }
+    if (status) {
+      sql += ' AND eb.status = ?';
+      params.push(status);
+    }
 
-  sql += ' ORDER BY eb.requested_at DESC';
+    sql += ' ORDER BY eb.requested_at DESC';
 
-  db.all(sql, params, (err, rows) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+    const rows = await dbAll(sql, params);
     res.json({ "message": "success", "data": rows });
-  });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.post('/api/eventual-benefits', authenticateToken, (req, res) => {
-  const { beneficiary_id, benefit_type, quantity, value, justification } = req.body;
-  const sql = `INSERT INTO eventual_benefits (beneficiary_id, benefit_type, quantity, value, justification) VALUES (?, ?, ?, ?, ?)`;
+app.post('/api/eventual-benefits', authenticateToken, async (req, res) => {
+  try {
+    const { beneficiary_id, benefit_type, quantity, value, justification } = req.body;
+    const sql = `INSERT INTO eventual_benefits (beneficiary_id, benefit_type, quantity, value, justification) VALUES (?, ?, ?, ?, ?)`;
 
-  db.run(sql, [beneficiary_id, benefit_type, quantity, value, justification], function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
-    auditLog(req, 'CREATE', 'eventual_benefits', this.lastID, { beneficiary_id, benefit_type });
-    res.status(201).json({ "message": "success", "data": { id: this.lastID, ...req.body } });
-  });
+    const result = await dbRun(sql, [beneficiary_id, benefit_type, quantity, value, justification]);
+    auditLog(req, 'CREATE', 'eventual_benefits', result.lastID, { beneficiary_id, benefit_type });
+    res.status(201).json({ "message": "success", "data": { id: result.lastID, ...req.body } });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.put('/api/eventual-benefits/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  const { status, observations } = req.body;
-  const fields = ['status = ?'], params = [status];
-  const approved_by = req.user.id;
+app.put('/api/eventual-benefits/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, observations } = req.body;
+    const fields = ['status = ?'], params = [status];
+    const approved_by = req.user.id;
 
-  if (observations !== undefined) { fields.push("observations = ?"); params.push(observations); }
+    if (observations !== undefined) { fields.push("observations = ?"); params.push(observations); }
 
-  if (status === 'Aprovado') {
-    fields.push("approval_date = CURRENT_TIMESTAMP");
-    fields.push("approved_by = ?");
-    params.push(approved_by);
-  }
-  if (status === 'Entregue') {
-    fields.push("delivery_date = CURRENT_TIMESTAMP");
-    fields.push("delivered_by = ?");
-    params.push(approved_by);
-  }
+    if (status === 'Aprovado') {
+      fields.push("approval_date = CURRENT_TIMESTAMP");
+      fields.push("approved_by = ?");
+      params.push(approved_by);
+    }
+    if (status === 'Entregue') {
+      fields.push("delivery_date = CURRENT_TIMESTAMP");
+      fields.push("delivered_by = ?");
+      params.push(approved_by);
+    }
 
-  params.push(id);
+    params.push(id);
 
-  const sql = `UPDATE eventual_benefits SET ${fields.join(', ')} WHERE id = ?`;
-  db.run(sql, params, function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+    const sql = `UPDATE eventual_benefits SET ${fields.join(', ')} WHERE id = ?`;
+    const result = await dbRun(sql, params);
     auditLog(req, 'UPDATE', 'eventual_benefits', id, { status });
-    res.json({ "message": "success", "changes": this.changes });
-  });
+    res.json({ "message": "success", "changes": result.changes });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
 
 // === ROTAS DOCUMENTOS ===
 
-app.get('/api/documents', authenticateToken, (req, res) => {
-  const { beneficiary_id, document_type } = req.query;
-  let sql = `
-    SELECT gd.*, b.name as beneficiary_name, u.name as generated_by_name
-    FROM generated_documents gd
-    LEFT JOIN beneficiaries b ON gd.beneficiary_id = b.id
-    LEFT JOIN users u ON gd.generated_by = u.id
-    WHERE 1=1
-  `;
-  const params = [];
+app.get('/api/documents', authenticateToken, async (req, res) => {
+  try {
+    const { beneficiary_id, document_type } = req.query;
+    let sql = `
+      SELECT gd.*, b.name as beneficiary_name, u.name as generated_by_name
+      FROM generated_documents gd
+      LEFT JOIN beneficiaries b ON gd.beneficiary_id = b.id
+      LEFT JOIN users u ON gd.generated_by = u.id
+      WHERE 1=1
+    `;
+    const params = [];
 
-  if (beneficiary_id) {
-    sql += ' AND gd.beneficiary_id = ?';
-    params.push(beneficiary_id);
-  }
-  if (document_type) {
-    sql += ' AND gd.document_type = ?';
-    params.push(document_type);
-  }
+    if (beneficiary_id) {
+      sql += ' AND gd.beneficiary_id = ?';
+      params.push(beneficiary_id);
+    }
+    if (document_type) {
+      sql += ' AND gd.document_type = ?';
+      params.push(document_type);
+    }
 
-  sql += ' ORDER BY gd.generated_at DESC';
+    sql += ' ORDER BY gd.generated_at DESC';
 
-  db.all(sql, params, (err, rows) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+    const rows = await dbAll(sql, params);
     res.json({ "message": "success", "data": rows });
-  });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.post('/api/documents', authenticateToken, (req, res) => {
-  const { document_type, beneficiary_id, case_id, title, content, template_name } = req.body;
-  const generated_by = req.user.id;
-  const sql = `INSERT INTO generated_documents (document_type, beneficiary_id, case_id, title, content, template_name, generated_by) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+app.post('/api/documents', authenticateToken, async (req, res) => {
+  try {
+    const { document_type, beneficiary_id, case_id, title, content, template_name } = req.body;
+    const generated_by = req.user.id;
+    const sql = `INSERT INTO generated_documents (document_type, beneficiary_id, case_id, title, content, template_name, generated_by) VALUES (?, ?, ?, ?, ?, ?, ?)`;
 
-  db.run(sql, [document_type, beneficiary_id, case_id, title, content, template_name, generated_by], function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
-    auditLog(req, 'CREATE', 'generated_documents', this.lastID, { document_type, title });
-    res.status(201).json({ "message": "success", "data": { id: this.lastID, ...req.body, generated_by } });
-  });
+    const result = await dbRun(sql, [document_type, beneficiary_id, case_id, title, content, template_name, generated_by]);
+    auditLog(req, 'CREATE', 'generated_documents', result.lastID, { document_type, title });
+    res.status(201).json({ "message": "success", "data": { id: result.lastID, ...req.body, generated_by } });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
 
 // === ROTAS DENÚNCIAS ANÔNIMAS ===
 
-app.get('/api/anonymous-reports', authenticateToken, (req, res) => {
-  const { status } = req.query;
-  let sql = `
-    SELECT ar.*, u.name as assigned_to_name
-    FROM anonymous_reports ar
-    LEFT JOIN users u ON ar.assigned_to = u.id
-    WHERE 1=1
-  `;
-  const params = [];
+app.get('/api/anonymous-reports', authenticateToken, async (req, res) => {
+  try {
+    const { status } = req.query;
+    let sql = `
+      SELECT ar.*, u.name as assigned_to_name
+      FROM anonymous_reports ar
+      LEFT JOIN users u ON ar.assigned_to = u.id
+      WHERE 1=1
+    `;
+    const params = [];
 
-  if (status) {
-    sql += ' AND ar.status = ?';
-    params.push(status);
-  }
+    if (status) {
+      sql += ' AND ar.status = ?';
+      params.push(status);
+    }
 
-  sql += ' ORDER BY ar.report_date DESC';
+    sql += ' ORDER BY ar.report_date DESC';
 
-  db.all(sql, params, (err, rows) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+    const rows = await dbAll(sql, params);
     res.json({ "message": "success", "data": rows });
-  });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.post('/api/anonymous-reports', (req, res) => {
-  const { report_type, description, location } = req.body;
-  const protocol_number = `DENUNCIA-${Date.now()}`;
-  const sql = `INSERT INTO anonymous_reports (report_type, description, location, protocol_number) VALUES (?, ?, ?, ?)`;
+app.post('/api/anonymous-reports', async (req, res) => {
+  try {
+    const { report_type, description, location } = req.body;
+    const protocol_number = `DENUNCIA-${Date.now()}`;
+    const sql = `INSERT INTO anonymous_reports (report_type, description, location, protocol_number) VALUES (?, ?, ?, ?)`;
 
-  db.run(sql, [report_type, description, location, protocol_number], function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
-    res.status(201).json({ "message": "success", "data": { id: this.lastID, protocol_number } });
-  });
+    const result = await dbRun(sql, [report_type, description, location, protocol_number]);
+    res.status(201).json({ "message": "success", "data": { id: result.lastID, protocol_number } });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.put('/api/anonymous-reports/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  const { status, assigned_to } = req.body;
-  const fields = [], params = [];
+app.put('/api/anonymous-reports/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, assigned_to } = req.body;
+    const fields = [], params = [];
 
-  if (status !== undefined) { fields.push("status = ?"); params.push(status); }
-  if (assigned_to !== undefined) { fields.push("assigned_to = ?"); params.push(assigned_to); }
+    if (status !== undefined) { fields.push("status = ?"); params.push(status); }
+    if (assigned_to !== undefined) { fields.push("assigned_to = ?"); params.push(assigned_to); }
 
-  if (fields.length === 0) { return res.status(400).json({ "error": "Nenhum campo para atualizar fornecido." }); }
-  params.push(id);
+    if (fields.length === 0) { return res.status(400).json({ "error": "Nenhum campo para atualizar fornecido." }); }
+    params.push(id);
 
-  const sql = `UPDATE anonymous_reports SET ${fields.join(', ')} WHERE id = ?`;
-  db.run(sql, params, function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+    const sql = `UPDATE anonymous_reports SET ${fields.join(', ')} WHERE id = ?`;
+    const result = await dbRun(sql, params);
     auditLog(req, 'UPDATE', 'anonymous_reports', id, { status });
-    res.json({ "message": "success", "changes": this.changes });
-  });
+    res.json({ "message": "success", "changes": result.changes });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
 
 // === ROTAS NOTIFICAÇÕES ===
 
-app.get('/api/notifications', authenticateToken, (req, res) => {
-  const { beneficiary_id, read } = req.query;
-  let sql = `SELECT * FROM notifications WHERE 1=1`;
-  const params = [];
+app.get('/api/notifications', authenticateToken, async (req, res) => {
+  try {
+    const { beneficiary_id, read } = req.query;
+    let sql = `SELECT * FROM notifications WHERE 1=1`;
+    const params = [];
 
-  if (beneficiary_id) {
-    sql += ' AND beneficiary_id = ?';
-    params.push(beneficiary_id);
-  }
-  if (read !== undefined) {
-    sql += ' AND read = ?';
-    params.push(read === 'true' ? 1 : 0);
-  }
+    if (beneficiary_id) {
+      sql += ' AND beneficiary_id = ?';
+      params.push(beneficiary_id);
+    }
+    if (read !== undefined) {
+      sql += ' AND read = ?';
+      params.push(read === 'true' ? 1 : 0);
+    }
 
-  sql += ' ORDER BY created_at DESC';
+    sql += ' ORDER BY created_at DESC';
 
-  db.all(sql, params, (err, rows) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+    const rows = await dbAll(sql, params);
     res.json({ "message": "success", "data": rows });
-  });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.post('/api/notifications', authenticateToken, (req, res) => {
-  const { beneficiary_id, title, message, type, channel } = req.body;
-  const sql = `INSERT INTO notifications (beneficiary_id, title, message, type, channel) VALUES (?, ?, ?, ?, ?)`;
+app.post('/api/notifications', authenticateToken, async (req, res) => {
+  try {
+    const { beneficiary_id, title, message, type, channel } = req.body;
+    const sql = `INSERT INTO notifications (beneficiary_id, title, message, type, channel) VALUES (?, ?, ?, ?, ?)`;
 
-  db.run(sql, [beneficiary_id, title, message, type, channel], function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
-    res.status(201).json({ "message": "success", "data": { id: this.lastID, ...req.body } });
-  });
+    const result = await dbRun(sql, [beneficiary_id, title, message, type, channel]);
+    res.status(201).json({ "message": "success", "data": { id: result.lastID, ...req.body } });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.put('/api/notifications/:id/read', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  const sql = `UPDATE notifications SET read = 1, read_at = CURRENT_TIMESTAMP WHERE id = ?`;
-  db.run(sql, [id], function(err) {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
-    res.json({ "message": "success", "changes": this.changes });
-  });
+app.put('/api/notifications/:id/read', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const sql = `UPDATE notifications SET read = 1, read_at = CURRENT_TIMESTAMP WHERE id = ?`;
+    const result = await dbRun(sql, [id]);
+    res.json({ "message": "success", "changes": result.changes });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
 
 // === ROTAS IA - PREDIÇÃO DE VULNERABILIDADE ===
 
-app.get('/api/vulnerability-predictions', authenticateToken, (req, res) => {
-  const { beneficiary_id, risk_level } = req.query;
-  let sql = `
-    SELECT vp.*, b.name as beneficiary_name, b.cpf
-    FROM vulnerability_predictions vp
-    JOIN beneficiaries b ON vp.beneficiary_id = b.id
-    WHERE 1=1
-  `;
-  const params = [];
+app.get('/api/vulnerability-predictions', authenticateToken, async (req, res) => {
+  try {
+    const { beneficiary_id, risk_level } = req.query;
+    let sql = `
+      SELECT vp.*, b.name as beneficiary_name, b.cpf
+      FROM vulnerability_predictions vp
+      JOIN beneficiaries b ON vp.beneficiary_id = b.id
+      WHERE 1=1
+    `;
+    const params = [];
 
-  if (beneficiary_id) {
-    sql += ' AND vp.beneficiary_id = ?';
-    params.push(beneficiary_id);
-  }
-  if (risk_level) {
-    sql += ' AND vp.risk_level = ?';
-    params.push(risk_level);
-  }
+    if (beneficiary_id) {
+      sql += ' AND vp.beneficiary_id = ?';
+      params.push(beneficiary_id);
+    }
+    if (risk_level) {
+      sql += ' AND vp.risk_level = ?';
+      params.push(risk_level);
+    }
 
-  sql += ' ORDER BY vp.created_at DESC';
+    sql += ' ORDER BY vp.created_at DESC';
 
-  db.all(sql, params, (err, rows) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+    const rows = await dbAll(sql, params);
     res.json({ "message": "success", "data": rows });
-  });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
 // Função de IA simulada para predição de vulnerabilidade
-app.post('/api/ai/predict-vulnerability/:beneficiary_id', authenticateToken, (req, res) => {
-  const { beneficiary_id } = req.params;
+app.post('/api/ai/predict-vulnerability/:beneficiary_id', authenticateToken, async (req, res) => {
+  try {
+    const { beneficiary_id } = req.params;
 
-  // Busca dados do beneficiário
-  db.get('SELECT * FROM beneficiaries WHERE id = ?', [beneficiary_id], (err, beneficiary) => {
-    if (err) { return res.status(400).json({ "error": err.message }); }
+    // Busca dados do beneficiário
+    const beneficiary = await dbGet('SELECT * FROM beneficiaries WHERE id = ?', [beneficiary_id]);
     if (!beneficiary) { return res.status(404).json({ "error": "Beneficiário não encontrado" }); }
 
     // Algoritmo simples de predição baseado em fatores de risco
@@ -2406,139 +2466,136 @@ app.post('/api/ai/predict-vulnerability/:beneficiary_id', authenticateToken, (re
       'v1.0-simple-rules'
     ];
 
-    db.run(sql, params, function(err) {
-      if (err) { return res.status(400).json({ "error": err.message }); }
+    const result = await dbRun(sql, params);
 
-      // Atualiza score no beneficiário
-      db.run('UPDATE beneficiaries SET vulnerabilidade_score = ? WHERE id = ?', [score, beneficiary_id], (err) => {
-        if (err) console.error('Erro ao atualizar score:', err.message);
-      });
+    // Atualiza score no beneficiário (fire-and-forget)
+    dbRun('UPDATE beneficiaries SET vulnerabilidade_score = ? WHERE id = ?', [score, beneficiary_id])
+      .catch(err => console.error('Erro ao atualizar score:', err.message));
 
-      auditLog(req, 'AI_PREDICTION', 'vulnerability_predictions', this.lastID, { beneficiary_id, risk_level });
+    auditLog(req, 'AI_PREDICTION', 'vulnerability_predictions', result.lastID, { beneficiary_id, risk_level });
 
-      res.json({
-        "message": "success",
-        "data": {
-          id: this.lastID,
-          beneficiary_id,
-          prediction_score: score.toFixed(3),
-          risk_level,
-          factors,
-          recommendations
-        }
-      });
+    res.json({
+      "message": "success",
+      "data": {
+        id: result.lastID,
+        beneficiary_id,
+        prediction_score: score.toFixed(3),
+        risk_level,
+        factors,
+        recommendations
+      }
     });
-  });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
 
 // === ROTAS IA - INSIGHTS ===
 
-app.get('/api/ai-insights', authenticateToken, (req, res) => {
-  const { status, priority } = req.query;
-  let sql = `
-    SELECT ai.*
-    FROM ai_insights ai
-    WHERE 1=1
-  `;
-  const params = [];
+app.get('/api/ai-insights', authenticateToken, async (req, res) => {
+  try {
+    const { status, priority } = req.query;
+    let sql = `
+      SELECT ai.*
+      FROM ai_insights ai
+      WHERE 1=1
+    `;
+    const params = [];
 
-  if (status) {
-    sql += ' AND ai.status = ?';
-    params.push(status);
-  }
-  if (priority) {
-    sql += ' AND ai.priority = ?';
-    params.push(priority);
-  }
+    if (status) {
+      sql += ' AND ai.status = ?';
+      params.push(status);
+    }
+    if (priority) {
+      sql += ' AND ai.priority = ?';
+      params.push(priority);
+    }
 
-  sql += ' ORDER BY ai.created_at DESC LIMIT 50';
+    sql += ' ORDER BY ai.created_at DESC LIMIT 50';
 
-  db.all(sql, params, (err, rows) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+    const rows = await dbAll(sql, params);
     res.json({ "message": "success", "data": rows });
-  });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
 // Gera insights automáticos baseados em dados
-app.post('/api/ai/generate-insights', authenticateToken, (req, res) => {
-  const insights = [];
+app.post('/api/ai/generate-insights', authenticateToken, async (req, res) => {
+  // Fire-and-forget insight generation
+  (async () => {
+    try {
+      // Insight 1: Bairros com maior concentração de vulnerabilidade
+      const bairroRows = await dbAll(`
+        SELECT bairro, COUNT(*) as count, AVG(vulnerabilidade_score) as avg_score
+        FROM beneficiaries
+        WHERE bairro IS NOT NULL AND vulnerabilidade_score IS NOT NULL
+        GROUP BY bairro
+        HAVING count >= 3
+        ORDER BY avg_score DESC
+        LIMIT 3
+      `, []);
 
-  // Insight 1: Bairros com maior concentração de vulnerabilidade
-  db.all(`
-    SELECT bairro, COUNT(*) as count, AVG(vulnerabilidade_score) as avg_score
-    FROM beneficiaries
-    WHERE bairro IS NOT NULL AND vulnerabilidade_score IS NOT NULL
-    GROUP BY bairro
-    HAVING count >= 3
-    ORDER BY avg_score DESC
-    LIMIT 3
-  `, [], (err, rows) => {
-    if (err) console.error(err);
+      if (bairroRows && bairroRows.length > 0) {
+        for (const row of bairroRows) {
+          const severity = row.avg_score >= 0.7 ? 'Alta' : row.avg_score >= 0.5 ? 'Média' : 'Baixa';
+          await dbRun(`INSERT INTO ai_insights (insight_type, title, description, related_bairro, severity) VALUES (?, ?, ?, ?, ?)`, [
+            'Padrão Identificado',
+            `Alta vulnerabilidade detectada no bairro ${row.bairro}`,
+            `O bairro ${row.bairro} apresenta ${row.count} famílias com score médio de vulnerabilidade de ${(row.avg_score * 100).toFixed(1)}%. Recomenda-se intensificar ações do CRAS na região.`,
+            row.bairro,
+            severity
+          ]);
+        }
+      }
 
-    if (rows && rows.length > 0) {
-      rows.forEach(row => {
-        const severity = row.avg_score >= 0.7 ? 'Alta' : row.avg_score >= 0.5 ? 'Média' : 'Baixa';
-        const sql = `INSERT INTO ai_insights (insight_type, title, description, related_bairro, severity) VALUES (?, ?, ?, ?, ?)`;
-        db.run(sql, [
-          'Padrão Identificado',
-          `Alta vulnerabilidade detectada no bairro ${row.bairro}`,
-          `O bairro ${row.bairro} apresenta ${row.count} famílias com score médio de vulnerabilidade de ${(row.avg_score * 100).toFixed(1)}%. Recomenda-se intensificar ações do CRAS na região.`,
-          row.bairro,
-          severity
-        ]);
-      });
-    }
-  });
+      // Insight 2: Benefícios eventuais mais solicitados
+      const benefitRows = await dbAll(`
+        SELECT benefit_type, COUNT(*) as count, SUM(CASE WHEN status = 'Aprovado' OR status = 'Entregue' THEN 1 ELSE 0 END) as approved
+        FROM eventual_benefits
+        GROUP BY benefit_type
+        ORDER BY count DESC
+        LIMIT 3
+      `, []);
 
-  // Insight 2: Benefícios eventuais mais solicitados
-  db.all(`
-    SELECT benefit_type, COUNT(*) as count, SUM(CASE WHEN status = 'Aprovado' OR status = 'Entregue' THEN 1 ELSE 0 END) as approved
-    FROM eventual_benefits
-    GROUP BY benefit_type
-    ORDER BY count DESC
-    LIMIT 3
-  `, [], (err, rows) => {
-    if (err) console.error(err);
-
-    if (rows && rows.length > 0) {
-      const topBenefit = rows[0];
-      const approvalRate = ((topBenefit.approved / topBenefit.count) * 100).toFixed(1);
-      const sql = `INSERT INTO ai_insights (insight_type, title, description, severity) VALUES (?, ?, ?, ?)`;
-      db.run(sql, [
-        'Tendência',
-        `Demanda elevada por ${topBenefit.benefit_type}`,
-        `Foram solicitadas ${topBenefit.count} unidades de ${topBenefit.benefit_type} no período, com taxa de aprovação de ${approvalRate}%. Considere ajustar o estoque e critérios de elegibilidade.`,
-        'Info'
-      ]);
-    }
-  });
-
-  // Insight 3: Casos CREAS críticos não resolvidos
-  db.all(`
-    SELECT COUNT(*) as count, severity
-    FROM creas_cases
-    WHERE status IN ('Aberto', 'Em Acompanhamento') AND severity IN ('Alta', 'Crítica')
-    GROUP BY severity
-  `, [], (err, rows) => {
-    if (err) console.error(err);
-
-    if (rows && rows.length > 0) {
-      const criticalCount = rows.find(r => r.severity === 'Crítica')?.count || 0;
-      const highCount = rows.find(r => r.severity === 'Alta')?.count || 0;
-
-      if (criticalCount > 0 || highCount > 0) {
-        const sql = `INSERT INTO ai_insights (insight_type, title, description, severity, actionable) VALUES (?, ?, ?, ?, ?)`;
-        db.run(sql, [
-          'Alerta',
-          `${criticalCount + highCount} casos CREAS graves pendentes`,
-          `Há ${criticalCount} casos críticos e ${highCount} casos de alta gravidade em acompanhamento. Revisar priorização e alocar recursos adicionais se necessário.`,
-          'Alta',
-          1
+      if (benefitRows && benefitRows.length > 0) {
+        const topBenefit = benefitRows[0];
+        const approvalRate = ((topBenefit.approved / topBenefit.count) * 100).toFixed(1);
+        await dbRun(`INSERT INTO ai_insights (insight_type, title, description, severity) VALUES (?, ?, ?, ?)`, [
+          'Tendência',
+          `Demanda elevada por ${topBenefit.benefit_type}`,
+          `Foram solicitadas ${topBenefit.count} unidades de ${topBenefit.benefit_type} no período, com taxa de aprovação de ${approvalRate}%. Considere ajustar o estoque e critérios de elegibilidade.`,
+          'Info'
         ]);
       }
+
+      // Insight 3: Casos CREAS críticos não resolvidos
+      const creasCaseRows = await dbAll(`
+        SELECT COUNT(*) as count, severity
+        FROM creas_cases
+        WHERE status IN ('Aberto', 'Em Acompanhamento') AND severity IN ('Alta', 'Crítica')
+        GROUP BY severity
+      `, []);
+
+      if (creasCaseRows && creasCaseRows.length > 0) {
+        const criticalCount = creasCaseRows.find(r => r.severity === 'Crítica')?.count || 0;
+        const highCount = creasCaseRows.find(r => r.severity === 'Alta')?.count || 0;
+
+        if (criticalCount > 0 || highCount > 0) {
+          await dbRun(`INSERT INTO ai_insights (insight_type, title, description, severity, actionable) VALUES (?, ?, ?, ?, ?)`, [
+            'Alerta',
+            `${criticalCount + highCount} casos CREAS graves pendentes`,
+            `Há ${criticalCount} casos críticos e ${highCount} casos de alta gravidade em acompanhamento. Revisar priorização e alocar recursos adicionais se necessário.`,
+            'Alta',
+            1
+          ]);
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao gerar insights:', err);
     }
-  });
+  })();
 
   auditLog(req, 'AI_INSIGHTS', 'ai_insights', null);
   res.json({ "message": "Insights gerados com sucesso. Aguarde alguns segundos e consulte a lista de insights." });
@@ -2547,13 +2604,13 @@ app.post('/api/ai/generate-insights', authenticateToken, (req, res) => {
 
 // === ROTAS CHATBOT ===
 
-app.post('/api/chatbot/message', (req, res) => {
-  const { session_id, message, user_id } = req.body;
+app.post('/api/chatbot/message', async (req, res) => {
+  try {
+    const { session_id, message, user_id } = req.body;
 
-  // Salva mensagem do usuário
-  const sql1 = `INSERT INTO chatbot_messages (user_id, session_id, message, sender) VALUES (?, ?, ?, 'user')`;
-  db.run(sql1, [user_id || null, session_id, message], function(err) {
-    if (err) { return res.status(400).json({ "error": err.message }); }
+    // Salva mensagem do usuário
+    const sql1 = `INSERT INTO chatbot_messages (user_id, session_id, message, sender) VALUES (?, ?, ?, 'user')`;
+    await dbRun(sql1, [user_id || null, session_id, message]);
 
     // Lógica simples de resposta do bot
     let botResponse = '';
@@ -2594,168 +2651,172 @@ app.post('/api/chatbot/message', (req, res) => {
 
     // Salva resposta do bot
     const sql2 = `INSERT INTO chatbot_messages (user_id, session_id, message, sender, intent, confidence) VALUES (?, ?, ?, 'bot', ?, ?)`;
-    db.run(sql2, [user_id || null, session_id, botResponse, intent, confidence], function(err) {
-      if (err) {
-        logger.error('Erro ao salvar mensagem do chatbot:', err);
-        return res.status(500).json({ "error": "Erro ao processar mensagem." });
-      }
+    const result = await dbRun(sql2, [user_id || null, session_id, botResponse, intent, confidence]);
 
-      // Retorna estrutura compatível com o frontend
-      res.json({
-        "data": {
-          "message": {
-            id: this.lastID,
-            session_id: session_id,
-            sender: 'bot',
-            message: botResponse,
-            timestamp: new Date().toISOString(),
-            intent,
-            confidence
-          }
+    // Retorna estrutura compatível com o frontend
+    res.json({
+      "data": {
+        "message": {
+          id: result.lastID,
+          session_id: session_id,
+          sender: 'bot',
+          message: botResponse,
+          timestamp: new Date().toISOString(),
+          intent,
+          confidence
         }
-      });
+      }
     });
-  });
+  } catch (err) {
+    logger.error('Erro ao processar mensagem do chatbot:', err);
+    res.status(500).json({ "error": "Erro ao processar mensagem." });
+  }
 });
 
-app.get('/api/chatbot/history/:session_id', (req, res) => {
-  const { session_id } = req.params;
-  const sql = `SELECT * FROM chatbot_messages WHERE session_id = ? ORDER BY timestamp ASC`;
-  db.all(sql, [session_id], (err, rows) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+app.get('/api/chatbot/history/:session_id', async (req, res) => {
+  try {
+    const { session_id } = req.params;
+    const sql = `SELECT * FROM chatbot_messages WHERE session_id = ? ORDER BY timestamp ASC`;
+    const rows = await dbAll(sql, [session_id]);
     res.json({ "message": "success", "data": rows });
-  });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
 
 // === ROTAS DE RELATÓRIOS ===
 
-app.get('/api/reports/stats', authenticateToken, (req, res) => {
-  const queries = {
-    totalBeneficiaries: "SELECT COUNT(*) as count FROM beneficiaries",
-    totalAppointments: "SELECT COUNT(*) as count FROM appointments",
-    totalPrograms: "SELECT COUNT(*) as count FROM programs",
-    totalCREASCases: "SELECT COUNT(*) as count FROM creas_cases WHERE status IN ('Aberto', 'Em Acompanhamento')",
-    appointmentsByStatus: "SELECT status, COUNT(*) as count FROM appointments GROUP BY status",
-    beneficiariesByProgram: `SELECT p.name, COUNT(bp.beneficiary_id) as count FROM programs p LEFT JOIN beneficiary_programs bp ON p.id = bp.program_id GROUP BY p.name`,
-    beneficiariesByBairro: "SELECT bairro, COUNT(*) as count FROM beneficiaries WHERE bairro IS NOT NULL GROUP BY bairro",
-    vulnerabilityByBairro: "SELECT bairro, AVG(vulnerabilidade_score) as avg_score FROM beneficiaries WHERE bairro IS NOT NULL AND vulnerabilidade_score IS NOT NULL GROUP BY bairro",
-    eventualBenefitsByType: "SELECT benefit_type, COUNT(*) as count FROM eventual_benefits GROUP BY benefit_type",
-    creasCasesByType: "SELECT case_type, COUNT(*) as count FROM creas_cases GROUP BY case_type",
-    homeVisitsByMonth: "SELECT strftime('%Y-%m', visit_date) as month, COUNT(*) as count FROM home_visits GROUP BY month ORDER BY month DESC LIMIT 12"
-  };
+app.get('/api/reports/stats', authenticateToken, async (req, res) => {
+  try {
+    const queries = {
+      totalBeneficiaries: "SELECT COUNT(*) as count FROM beneficiaries",
+      totalAppointments: "SELECT COUNT(*) as count FROM appointments",
+      totalPrograms: "SELECT COUNT(*) as count FROM programs",
+      totalCREASCases: "SELECT COUNT(*) as count FROM creas_cases WHERE status IN ('Aberto', 'Em Acompanhamento')",
+      appointmentsByStatus: "SELECT status, COUNT(*) as count FROM appointments GROUP BY status",
+      beneficiariesByProgram: `SELECT p.name, COUNT(bp.beneficiary_id) as count FROM programs p LEFT JOIN beneficiary_programs bp ON p.id = bp.program_id GROUP BY p.name`,
+      beneficiariesByBairro: "SELECT bairro, COUNT(*) as count FROM beneficiaries WHERE bairro IS NOT NULL GROUP BY bairro",
+      vulnerabilityByBairro: "SELECT bairro, AVG(vulnerabilidade_score) as avg_score FROM beneficiaries WHERE bairro IS NOT NULL AND vulnerabilidade_score IS NOT NULL GROUP BY bairro",
+      eventualBenefitsByType: "SELECT benefit_type, COUNT(*) as count FROM eventual_benefits GROUP BY benefit_type",
+      creasCasesByType: "SELECT case_type, COUNT(*) as count FROM creas_cases GROUP BY case_type",
+      homeVisitsByMonth: "SELECT strftime('%Y-%m', visit_date) as month, COUNT(*) as count FROM home_visits GROUP BY month ORDER BY month DESC LIMIT 12"
+    };
 
-  const results = {};
-  let completedQueries = 0;
-  const totalQueries = Object.keys(queries).length;
-
-  Object.entries(queries).forEach(([key, sql]) => {
-    db.all(sql, [], (err, rows) => {
-      if (err) {
-        if (!res.headersSent) { res.status(500).json({ "error": `Failed to fetch ${key}: ${err.message}` }); }
-        return;
-      }
-      if (key.startsWith('total')) { results[key] = rows[0].count; }
+    const results = {};
+    const queryPromises = Object.entries(queries).map(async ([key, sql]) => {
+      const rows = await dbAll(sql, []);
+      if (key.startsWith('total')) { results[key] = rows[0]?.count || 0; }
       else { results[key] = rows; }
-
-      completedQueries++;
-      if (completedQueries === totalQueries) { res.json({ "message": "success", "data": results }); }
     });
-  });
+
+    await Promise.all(queryPromises);
+    res.json({ "message": "success", "data": results });
+  } catch (err) {
+    res.status(500).json({ "error": err.message });
+  }
 });
 
-app.get('/api/reports/suas', authenticateToken, (req, res) => {
-  // Relatório formatado para o SUAS (Sistema Único de Assistência Social)
-  const report = {
-    periodo: new Date().toISOString().split('T')[0],
-    municipio: 'Caçapava do Sul - RS',
-    secretaria: 'Secretaria Municipal de Assistência Social'
-  };
+app.get('/api/reports/suas', authenticateToken, async (req, res) => {
+  try {
+    // Relatório formatado para o SUAS (Sistema Único de Assistência Social)
+    const report = {
+      periodo: new Date().toISOString().split('T')[0],
+      municipio: 'Caçapava do Sul - RS',
+      secretaria: 'Secretaria Municipal de Assistência Social'
+    };
 
-  // Dados agregados para o SUAS
-  db.all(`
-    SELECT
-      (SELECT COUNT(*) FROM beneficiaries) as total_familias,
-      (SELECT COUNT(*) FROM appointments WHERE status = 'Realizado' AND created_at >= date('now', '-1 month')) as atendimentos_mes,
-      (SELECT COUNT(*) FROM home_visits WHERE status = 'Realizada' AND visit_date >= date('now', '-1 month')) as visitas_mes,
-      (SELECT COUNT(*) FROM paif_activities WHERE status = 'Concluída' AND date >= date('now', '-1 month')) as atividades_paif_mes,
-      (SELECT COUNT(DISTINCT beneficiary_id) FROM scfv_enrollments WHERE status = 'Ativo') as total_scfv,
-      (SELECT COUNT(*) FROM creas_cases WHERE status IN ('Aberto', 'Em Acompanhamento')) as casos_creas_ativos,
-      (SELECT COUNT(*) FROM eventual_benefits WHERE status = 'Entregue' AND delivered_at >= date('now', '-1 month')) as beneficios_entregues_mes
-  `, [], (err, row) => {
-    if (err) { return res.status(400).json({ "error": err.message }); }
+    // Dados agregados para o SUAS
+    const row = await dbAll(`
+      SELECT
+        (SELECT COUNT(*) FROM beneficiaries) as total_familias,
+        (SELECT COUNT(*) FROM appointments WHERE status = 'Realizado' AND created_at >= date('now', '-1 month')) as atendimentos_mes,
+        (SELECT COUNT(*) FROM home_visits WHERE status = 'Realizada' AND visit_date >= date('now', '-1 month')) as visitas_mes,
+        (SELECT COUNT(*) FROM paif_activities WHERE status = 'Concluída' AND date >= date('now', '-1 month')) as atividades_paif_mes,
+        (SELECT COUNT(DISTINCT beneficiary_id) FROM scfv_enrollments WHERE status = 'Ativo') as total_scfv,
+        (SELECT COUNT(*) FROM creas_cases WHERE status IN ('Aberto', 'Em Acompanhamento')) as casos_creas_ativos,
+        (SELECT COUNT(*) FROM eventual_benefits WHERE status = 'Entregue' AND delivered_at >= date('now', '-1 month')) as beneficios_entregues_mes
+    `, []);
     report.dados = row[0];
     auditLog(req, 'EXPORT', 'reports_suas', null);
     res.json({ "message": "success", "data": report });
-  });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
 
 // === ROTAS CADÚNICO ===
 
-app.get('/api/cadunico/search', authenticateToken, (req, res) => {
-  const { cpf } = req.query;
-  if (!cpf) { return res.status(400).json({ "error": "CPF é obrigatório" }); }
-  const sql = "SELECT * FROM cadunico_data WHERE cpf = ?";
-  db.get(sql, [cpf], (err, row) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+app.get('/api/cadunico/search', authenticateToken, async (req, res) => {
+  try {
+    const { cpf } = req.query;
+    if (!cpf) { return res.status(400).json({ "error": "CPF é obrigatório" }); }
+    const sql = "SELECT * FROM cadunico_data WHERE cpf = ?";
+    const row = await dbGet(sql, [cpf]);
     auditLog(req, 'SEARCH', 'cadunico_data', null, { cpf });
     if (row) { res.json({ "message": "success", "data": row }); }
     else { res.status(404).json({ "message": "CPF não encontrado na base de dados local do CadÚnico." }); }
-  });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
-app.post('/api/cadunico/sync', authenticateToken, (req, res) => {
-  const { cpf, nis, name, renda_per_capita } = req.body;
-  const sql = `INSERT OR REPLACE INTO cadunico_data (cpf, nis, name, renda_per_capita, last_sync) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)`;
+app.post('/api/cadunico/sync', authenticateToken, async (req, res) => {
+  try {
+    const { cpf, nis, name, renda_per_capita } = req.body;
+    const sql = `INSERT OR REPLACE INTO cadunico_data (cpf, nis, name, renda_per_capita, last_sync) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)`;
 
-  db.run(sql, [cpf, nis, name, renda_per_capita], function(err) {
-    if (err) { return res.status(400).json({ "error": err.message }); }
+    await dbRun(sql, [cpf, nis, name, renda_per_capita]);
     auditLog(req, 'SYNC', 'cadunico_data', null, { cpf, nis });
     res.json({ "message": "Dados do CadÚnico sincronizados com sucesso" });
-  });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
 
 // === ROTAS AUDITORIA ===
 
-app.get('/api/audit-logs', authenticateToken, (req, res) => {
-  const { user_id, action, resource, date_from, date_to } = req.query;
-  let sql = `
-    SELECT al.*, u.name as user_name
-    FROM audit_logs al
-    JOIN users u ON al.user_id = u.id
-    WHERE 1=1
-  `;
-  const params = [];
+app.get('/api/audit-logs', authenticateToken, async (req, res) => {
+  try {
+    const { user_id, action, resource, date_from, date_to } = req.query;
+    let sql = `
+      SELECT al.*, u.name as user_name
+      FROM audit_logs al
+      JOIN users u ON al.user_id = u.id
+      WHERE 1=1
+    `;
+    const params = [];
 
-  if (user_id) {
-    sql += ' AND al.user_id = ?';
-    params.push(user_id);
-  }
-  if (action) {
-    sql += ' AND al.action = ?';
-    params.push(action);
-  }
-  if (resource) {
-    sql += ' AND al.resource = ?';
-    params.push(resource);
-  }
-  if (date_from) {
-    sql += ' AND al.timestamp >= ?';
-    params.push(date_from);
-  }
-  if (date_to) {
-    sql += ' AND al.timestamp <= ?';
-    params.push(date_to);
-  }
+    if (user_id) {
+      sql += ' AND al.user_id = ?';
+      params.push(user_id);
+    }
+    if (action) {
+      sql += ' AND al.action = ?';
+      params.push(action);
+    }
+    if (resource) {
+      sql += ' AND al.resource = ?';
+      params.push(resource);
+    }
+    if (date_from) {
+      sql += ' AND al.timestamp >= ?';
+      params.push(date_from);
+    }
+    if (date_to) {
+      sql += ' AND al.timestamp <= ?';
+      params.push(date_to);
+    }
 
-  sql += ' ORDER BY al.timestamp DESC LIMIT 1000';
+    sql += ' ORDER BY al.timestamp DESC LIMIT 1000';
 
-  db.all(sql, params, (err, rows) => {
-    if (err) { res.status(400).json({ "error": err.message }); return; }
+    const rows = await dbAll(sql, params);
     res.json({ "message": "success", "data": rows });
-  });
+  } catch (err) {
+    res.status(400).json({ "error": err.message });
+  }
 });
 
 
