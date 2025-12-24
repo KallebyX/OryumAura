@@ -256,7 +256,46 @@ const ensureDbReady = async (req, res, next) => {
   });
 };
 
-// Aplica o middleware para todas as rotas /api/
+// === ROTA DE DIAGNÓSTICO/HEALTH CHECK ===
+// Registrada ANTES do middleware ensureDbReady para funcionar mesmo quando o DB está down
+
+/**
+ * GET /api/health
+ * Retorna o status do servidor e configurações (para diagnóstico)
+ */
+app.get('/api/health', (req, res) => {
+  const status = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    environment: {
+      node_env: process.env.NODE_ENV || 'development',
+      is_serverless: !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME),
+      db_type: DB_TYPE
+    },
+    services: {
+      database: dbInitialized && db ? 'connected' : 'disconnected',
+      jwt: JWT_CONFIGURED ? 'configured' : 'NOT_CONFIGURED'
+    }
+  };
+
+  // Adiciona warnings se serviços críticos não estiverem disponíveis
+  if (!JWT_CONFIGURED) {
+    status.status = 'degraded';
+    status.warnings = status.warnings || [];
+    status.warnings.push('JWT_SECRET não configurado ou muito curto (mínimo 32 caracteres). Configure em Vercel → Settings → Environment Variables.');
+  }
+
+  if (!dbInitialized || !db) {
+    status.status = 'degraded';
+    status.warnings = status.warnings || [];
+    status.warnings.push('Banco de dados não inicializado. Verifique DATABASE_URL nas variáveis de ambiente.');
+  }
+
+  const httpStatus = status.status === 'ok' ? 200 : 503;
+  res.status(httpStatus).json(status);
+});
+
+// Aplica o middleware para todas as rotas /api/ (exceto /api/health que já foi registrada)
 app.use('/api/', ensureDbReady);
 
 // ====================================================================
@@ -961,10 +1000,12 @@ app.post('/api/login', authLimiter, [
 ], validateRequest, async (req, res) => {
   // Verifica se JWT está configurado
   if (!JWT_CONFIGURED) {
+    logger.warn('Tentativa de acesso com JWT_SECRET não configurado');
     return res.status(503).json({
       error: 'Serviço de autenticação indisponível',
-      message: 'JWT_SECRET não está configurado. Configure a variável de ambiente no Vercel.',
-      code: 'JWT_NOT_CONFIGURED'
+      message: 'JWT_SECRET não está configurado ou é muito curto (mínimo 32 caracteres). Configure a variável de ambiente JWT_SECRET em Vercel → Settings → Environment Variables.',
+      code: 'JWT_NOT_CONFIGURED',
+      help: 'Use: openssl rand -base64 32 para gerar um secret seguro'
     });
   }
 
@@ -1027,10 +1068,12 @@ app.post('/api/refresh', [
 ], validateRequest, async (req, res) => {
   // Verifica se JWT está configurado
   if (!JWT_CONFIGURED) {
+    logger.warn('Tentativa de acesso com JWT_SECRET não configurado');
     return res.status(503).json({
       error: 'Serviço de autenticação indisponível',
-      message: 'JWT_SECRET não está configurado. Configure a variável de ambiente no Vercel.',
-      code: 'JWT_NOT_CONFIGURED'
+      message: 'JWT_SECRET não está configurado ou é muito curto (mínimo 32 caracteres). Configure a variável de ambiente JWT_SECRET em Vercel → Settings → Environment Variables.',
+      code: 'JWT_NOT_CONFIGURED',
+      help: 'Use: openssl rand -base64 32 para gerar um secret seguro'
     });
   }
 
@@ -1123,10 +1166,12 @@ app.post('/api/register', authLimiter, [
 ], validateRequest, async (req, res) => {
   // Verifica se JWT está configurado
   if (!JWT_CONFIGURED) {
+    logger.warn('Tentativa de acesso com JWT_SECRET não configurado');
     return res.status(503).json({
       error: 'Serviço de autenticação indisponível',
-      message: 'JWT_SECRET não está configurado. Configure a variável de ambiente no Vercel.',
-      code: 'JWT_NOT_CONFIGURED'
+      message: 'JWT_SECRET não está configurado ou é muito curto (mínimo 32 caracteres). Configure a variável de ambiente JWT_SECRET em Vercel → Settings → Environment Variables.',
+      code: 'JWT_NOT_CONFIGURED',
+      help: 'Use: openssl rand -base64 32 para gerar um secret seguro'
     });
   }
 
@@ -2753,7 +2798,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Inicia o servidor
+// Inicia o servidor (apenas para ambiente local, não serverless)
 async function startServer() {
   // Para Neon/Postgres, inicializa o banco assincronamente
   if (DB_TYPE === 'neon' || DB_TYPE === 'postgres') {
@@ -2762,14 +2807,16 @@ async function startServer() {
       logger.info('✅ Banco Neon inicializado com sucesso');
     } catch (error) {
       logger.error('❌ Falha ao inicializar banco Neon:', error);
-      process.exit(1);
+      // Em ambiente local, podemos permitir que o servidor continue mesmo com erro de DB
+      // para facilitar debugging. Em produção serverless, isso é tratado de outra forma.
+      logger.warn('⚠️ Continuando sem banco de dados. Algumas funcionalidades estarão indisponíveis.');
     }
   }
 
   app.listen(port, () => {
     logger.info(`🚀 Oryum Aura API rodando em http://localhost:${port}`);
     logger.info(`📊 Total de endpoints implementados: 60+`);
-    logger.info(`🔐 Autenticação JWT ativada`);
+    logger.info(`🔐 Autenticação JWT: ${JWT_CONFIGURED ? 'ativada' : 'DESABILITADA (JWT_SECRET não configurado)'}`);
     logger.info(`📝 Sistema de auditoria LGPD ativo`);
     logger.info(`🤖 IA de predição e chatbot implementados`);
     logger.info(`🔒 Rate limiting e CORS configurados`);
@@ -2781,7 +2828,10 @@ async function startServer() {
 // Exporta o app para Vercel Serverless
 export default app;
 
-// Inicia o servidor se não estiver sendo importado como módulo
-if (process.env.NODE_ENV !== 'test') {
+// Inicia o servidor apenas em ambiente local (não serverless)
+// No Vercel, o app é importado e executado automaticamente
+const isServerlessEnv = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+
+if (!isServerlessEnv && process.env.NODE_ENV !== 'test') {
   startServer();
 }
