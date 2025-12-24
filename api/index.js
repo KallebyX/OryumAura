@@ -20,18 +20,22 @@ const DB_TYPE = process.env.DB_TYPE || 'sqlite';
 // VALIDAÇÕES DE SEGURANÇA CRÍTICAS
 // ====================================================================
 
-// Validação obrigatória do JWT_SECRET (mínimo 32 caracteres)
+// Flag para indicar se JWT está configurado corretamente
+let JWT_CONFIGURED = true;
+
+// Validação do JWT_SECRET (mínimo 32 caracteres)
+// Não usamos process.exit() para permitir que endpoints públicos funcionem
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-  console.error('\n❌ ERRO CRÍTICO DE SEGURANÇA: JWT_SECRET não configurado ou muito curto!\n');
-  console.error('O sistema não pode iniciar sem um JWT_SECRET seguro (mínimo 32 caracteres).\n');
-  console.error('📝 Instruções de configuração:\n');
-  console.error('1. Gere um secret seguro:');
-  console.error('   openssl rand -base64 32\n');
-  console.error('2. Configure a variável de ambiente:');
-  console.error('   - Local: adicione JWT_SECRET=<seu-secret> no arquivo .env');
-  console.error('   - Vercel: Settings → Environment Variables → JWT_SECRET\n');
-  console.error('📚 Veja mais em: VERCEL_SETUP.md ou DEPLOYMENT.md\n');
-  process.exit(1);
+  JWT_CONFIGURED = false;
+  console.warn('\n⚠️  AVISO: JWT_SECRET não configurado ou muito curto!\n');
+  console.warn('Endpoints públicos funcionarão, mas autenticação estará desabilitada.\n');
+  console.warn('📝 Para habilitar autenticação:\n');
+  console.warn('1. Gere um secret seguro:');
+  console.warn('   openssl rand -base64 32\n');
+  console.warn('2. Configure a variável de ambiente:');
+  console.warn('   - Local: adicione JWT_SECRET=<seu-secret> no arquivo .env');
+  console.warn('   - Vercel: Settings → Environment Variables → JWT_SECRET\n');
+  console.warn('📚 Veja mais em: VERCEL_SETUP.md ou DEPLOYMENT.md\n');
 }
 
 const app = express();
@@ -784,6 +788,15 @@ db.serialize(() => {
 // === MIDDLEWARE DE AUTENTICAÇÃO ===
 
 const authenticateToken = (req, res, next) => {
+    // Verifica se JWT está configurado antes de tentar autenticar
+    if (!JWT_CONFIGURED) {
+        return res.status(503).json({
+            error: 'Serviço de autenticação indisponível',
+            message: 'JWT_SECRET não está configurado. Configure a variável de ambiente no Vercel.',
+            code: 'JWT_NOT_CONFIGURED'
+        });
+    }
+
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
@@ -903,6 +916,15 @@ app.post('/api/login', authLimiter, [
   body('cpf').notEmpty().withMessage('CPF é obrigatório').isLength({ min: 11, max: 11 }).withMessage('CPF inválido'),
   body('senha').notEmpty().withMessage('Senha é obrigatória')
 ], validateRequest, async (req, res) => {
+  // Verifica se JWT está configurado
+  if (!JWT_CONFIGURED) {
+    return res.status(503).json({
+      error: 'Serviço de autenticação indisponível',
+      message: 'JWT_SECRET não está configurado. Configure a variável de ambiente no Vercel.',
+      code: 'JWT_NOT_CONFIGURED'
+    });
+  }
+
   const { cpf, senha } = req.body;
 
   try {
@@ -960,6 +982,15 @@ app.post('/api/login', authLimiter, [
 app.post('/api/refresh', [
   body('refresh_token').notEmpty().withMessage('Refresh token é obrigatório')
 ], validateRequest, async (req, res) => {
+  // Verifica se JWT está configurado
+  if (!JWT_CONFIGURED) {
+    return res.status(503).json({
+      error: 'Serviço de autenticação indisponível',
+      message: 'JWT_SECRET não está configurado. Configure a variável de ambiente no Vercel.',
+      code: 'JWT_NOT_CONFIGURED'
+    });
+  }
+
   const { refresh_token } = req.body;
 
   try {
@@ -1047,6 +1078,15 @@ app.post('/api/register', authLimiter, [
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage('Senha deve conter letras maiúsculas, minúsculas e números'),
   body('role').optional().isIn(['beneficiario', 'servidor', 'coordenador', 'secretaria']).withMessage('Cargo inválido')
 ], validateRequest, async (req, res) => {
+  // Verifica se JWT está configurado
+  if (!JWT_CONFIGURED) {
+    return res.status(503).json({
+      error: 'Serviço de autenticação indisponível',
+      message: 'JWT_SECRET não está configurado. Configure a variável de ambiente no Vercel.',
+      code: 'JWT_NOT_CONFIGURED'
+    });
+  }
+
   const { cpf, name, senha, email, phone, role = 'beneficiario' } = req.body;
 
   try {
