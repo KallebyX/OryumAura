@@ -872,6 +872,11 @@ db.serialize(() => {
 const authenticateToken = (req, res, next) => {
     // Verifica se JWT está configurado antes de tentar autenticar
     if (!JWT_CONFIGURED) {
+        logger.warn('Tentativa de autenticação com JWT não configurado', {
+            path: req.path,
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+        });
         return res.status(503).json({
             error: 'Serviço de autenticação indisponível',
             message: 'JWT_SECRET não está configurado. Configure a variável de ambiente no Vercel.',
@@ -882,10 +887,26 @@ const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
-    if (token == null) return res.sendStatus(401);
+    if (token == null) {
+        logger.warn('Autenticação falhou: Token não fornecido', {
+            path: req.path,
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+        });
+        return res.sendStatus(401);
+    }
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.sendStatus(403);
+        if (err) {
+            logger.warn('Autenticação falhou: Token inválido ou expirado', {
+                path: req.path,
+                ip: req.ip,
+                userAgent: req.get('user-agent'),
+                errorType: err.name,
+                errorMessage: err.message
+            });
+            return res.sendStatus(403);
+        }
         req.user = user;
         next();
     });
@@ -1141,6 +1162,13 @@ app.post('/api/logout', authenticateToken, async (req, res) => {
 });
 
 app.get('/api/profile', authenticateToken, (req, res) => {
+    logger.info('Perfil acessado com sucesso', {
+        userId: req.user.id,
+        userName: req.user.name,
+        userRole: req.user.role,
+        ip: req.ip,
+        userAgent: req.get('user-agent')
+    });
     res.json({
         id: req.user.id,
         cpf: req.user.cpf,
