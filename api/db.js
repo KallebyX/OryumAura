@@ -39,8 +39,9 @@ export async function connectDB(logger) {
             paramIndex++;
           }
 
-          const result = await neonSql(pgQuery, params);
-          return result;
+          // Usa neonSql.query() para queries com placeholders (ao invés de template literals)
+          const result = await neonSql.query(pgQuery, params);
+          return result.rows || result;
         } catch (error) {
           logger.error('Erro na query Neon:', error);
           throw error;
@@ -55,8 +56,10 @@ export async function connectDB(logger) {
             paramIndex++;
           }
 
-          const result = await neonSql(pgQuery, params);
-          return result[0];
+          // Usa neonSql.query() para queries com placeholders (ao invés de template literals)
+          const result = await neonSql.query(pgQuery, params);
+          const rows = result.rows || result;
+          return rows[0];
         } catch (error) {
           logger.error('Erro na query Neon:', error);
           throw error;
@@ -76,10 +79,12 @@ export async function connectDB(logger) {
             pgQuery = pgQuery.replace(/;?\s*$/, ' RETURNING id;');
           }
 
-          const result = await neonSql(pgQuery, params);
+          // Usa neonSql.query() para queries com placeholders (ao invés de template literals)
+          const result = await neonSql.query(pgQuery, params);
+          const rows = result.rows || result;
           return {
-            lastID: result[0]?.id || null,
-            changes: result.length || 1
+            lastID: rows[0]?.id || null,
+            changes: rows.length || result.rowCount || 1
           };
         } catch (error) {
           logger.error('Erro na query Neon:', error);
@@ -95,8 +100,9 @@ export async function connectDB(logger) {
             paramIndex++;
           }
 
-          const result = await neonSql(pgQuery, params);
-          return result;
+          // Usa neonSql.query() para queries com placeholders (ao invés de template literals)
+          const result = await neonSql.query(pgQuery, params);
+          return result.rows || result;
         } catch (error) {
           logger.error('Erro na query Neon:', error);
           throw error;
@@ -105,8 +111,9 @@ export async function connectDB(logger) {
       // Método raw para queries já em formato PostgreSQL
       raw: async (query, params = []) => {
         try {
-          const result = await neonSql(query, params);
-          return result;
+          // Usa neonSql.query() para queries com placeholders (ao invés de template literals)
+          const result = await neonSql.query(query, params);
+          return result.rows || result;
         } catch (error) {
           logger.error('Erro na query Neon (raw):', error);
           throw error;
