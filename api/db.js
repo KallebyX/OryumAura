@@ -549,6 +549,22 @@ export async function createNeonTables(logger) {
     `;
     logger.info('✅ Tabela chatbot_messages criada');
 
+    // Refresh Tokens table (for JWT refresh token rotation)
+    await sql`
+      CREATE TABLE IF NOT EXISTS refresh_tokens (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token TEXT UNIQUE NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        ip_address VARCHAR(45),
+        user_agent TEXT,
+        revoked BOOLEAN DEFAULT FALSE,
+        revoked_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    logger.info('✅ Tabela refresh_tokens criada');
+
     // Audit Logs table (LGPD compliance)
     await sql`
       CREATE TABLE IF NOT EXISTS audit_logs (
@@ -574,6 +590,8 @@ export async function createNeonTables(logger) {
     await sql`CREATE INDEX IF NOT EXISTS idx_creas_cases_status ON creas_cases(status)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_eventual_benefits_status ON eventual_benefits(status)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id)`;
     logger.info('✅ Índices criados');
 
     logger.info('🎉 Todas as tabelas Neon criadas com sucesso!');
