@@ -15,6 +15,36 @@ let neonSql = null;
 neonConfig.fetchConnectionCache = true;
 
 // Função para conectar ao banco de dados
+// Função para converter funções SQLite para PostgreSQL
+function convertSqliteToPostgres(query) {
+  let pgQuery = query;
+
+  // Converte strftime('%Y-%m', column) para TO_CHAR(column, 'YYYY-MM')
+  pgQuery = pgQuery.replace(/strftime\s*\(\s*'%Y-%m'\s*,\s*([^)]+)\)/gi, "TO_CHAR($1, 'YYYY-MM')");
+
+  // Converte strftime('%Y', column) para TO_CHAR(column, 'YYYY')
+  pgQuery = pgQuery.replace(/strftime\s*\(\s*'%Y'\s*,\s*([^)]+)\)/gi, "TO_CHAR($1, 'YYYY')");
+
+  // Converte strftime('%m', column) para TO_CHAR(column, 'MM')
+  pgQuery = pgQuery.replace(/strftime\s*\(\s*'%m'\s*,\s*([^)]+)\)/gi, "TO_CHAR($1, 'MM')");
+
+  // Converte strftime('%d', column) para TO_CHAR(column, 'DD')
+  pgQuery = pgQuery.replace(/strftime\s*\(\s*'%d'\s*,\s*([^)]+)\)/gi, "TO_CHAR($1, 'DD')");
+
+  // Converte date('now', '-1 month') para CURRENT_DATE - INTERVAL '1 month'
+  pgQuery = pgQuery.replace(/date\s*\(\s*'now'\s*,\s*'-1 month'\s*\)/gi, "(CURRENT_DATE - INTERVAL '1 month')");
+
+  // Converte GROUP BY month para GROUP BY TO_CHAR(...) quando month é um alias de TO_CHAR
+  if (pgQuery.includes("TO_CHAR") && pgQuery.includes("GROUP BY month")) {
+    const toCharMatch = pgQuery.match(/TO_CHAR\s*\([^)]+,\s*'[^']+'\)/i);
+    if (toCharMatch) {
+      pgQuery = pgQuery.replace(/GROUP BY month/gi, `GROUP BY ${toCharMatch[0]}`);
+    }
+  }
+
+  return pgQuery;
+}
+
 export async function connectDB(logger) {
   if (DB_TYPE === 'neon' || DB_TYPE === 'postgres') {
     if (!DATABASE_URL) {
@@ -31,8 +61,10 @@ export async function connectDB(logger) {
       type: 'neon',
       query: async (query, params = []) => {
         try {
+          // Converte funções SQLite para PostgreSQL
+          let pgQuery = convertSqliteToPostgres(query);
+
           // Converte placeholders ? para $1, $2, etc (estilo PostgreSQL)
-          let pgQuery = query;
           let paramIndex = 1;
           while (pgQuery.includes('?')) {
             pgQuery = pgQuery.replace('?', `$${paramIndex}`);
@@ -49,7 +81,9 @@ export async function connectDB(logger) {
       },
       get: async (query, params = []) => {
         try {
-          let pgQuery = query;
+          // Converte funções SQLite para PostgreSQL
+          let pgQuery = convertSqliteToPostgres(query);
+
           let paramIndex = 1;
           while (pgQuery.includes('?')) {
             pgQuery = pgQuery.replace('?', `$${paramIndex}`);
@@ -67,7 +101,9 @@ export async function connectDB(logger) {
       },
       run: async (query, params = []) => {
         try {
-          let pgQuery = query;
+          // Converte funções SQLite para PostgreSQL
+          let pgQuery = convertSqliteToPostgres(query);
+
           let paramIndex = 1;
           while (pgQuery.includes('?')) {
             pgQuery = pgQuery.replace('?', `$${paramIndex}`);
@@ -93,7 +129,9 @@ export async function connectDB(logger) {
       },
       all: async (query, params = []) => {
         try {
-          let pgQuery = query;
+          // Converte funções SQLite para PostgreSQL
+          let pgQuery = convertSqliteToPostgres(query);
+
           let paramIndex = 1;
           while (pgQuery.includes('?')) {
             pgQuery = pgQuery.replace('?', `$${paramIndex}`);
@@ -519,7 +557,10 @@ export async function createNeonTables(logger) {
         description TEXT,
         data TEXT,
         priority TEXT CHECK(priority IN ('Baixa', 'Média', 'Alta')) DEFAULT 'Média',
+        severity TEXT CHECK(severity IN ('Baixa', 'Média', 'Alta')) DEFAULT 'Média',
         status TEXT CHECK(status IN ('Novo', 'Visualizado', 'Implementado', 'Descartado')) DEFAULT 'Novo',
+        related_bairro TEXT,
+        actionable BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `;
@@ -593,6 +634,17 @@ export async function createNeonTables(logger) {
     await sql`CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id)`;
     logger.info('✅ Índices criados');
+
+    // Add missing columns to existing tables (for migrations)
+    try {
+      await sql`ALTER TABLE ai_insights ADD COLUMN IF NOT EXISTS severity TEXT CHECK(severity IN ('Baixa', 'Média', 'Alta')) DEFAULT 'Média'`;
+      await sql`ALTER TABLE ai_insights ADD COLUMN IF NOT EXISTS related_bairro TEXT`;
+      await sql`ALTER TABLE ai_insights ADD COLUMN IF NOT EXISTS actionable BOOLEAN DEFAULT FALSE`;
+      logger.info('✅ Colunas adicionais da tabela ai_insights verificadas');
+    } catch (e) {
+      // Ignora erro se a coluna já existir
+      logger.info('Colunas ai_insights já existem ou erro ao adicionar:', e.message);
+    }
 
     logger.info('🎉 Todas as tabelas Neon criadas com sucesso!');
   } catch (error) {

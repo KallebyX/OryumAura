@@ -1893,7 +1893,7 @@ app.post('/api/paif-activities/:id/participants', authenticateToken, (req, res) 
 app.get('/api/scfv-enrollments', authenticateToken, (req, res) => {
   const { beneficiary_id, status, age_group } = req.query;
   let sql = `
-    SELECT se.*, b.name as beneficiary_name, b.birthDate
+    SELECT se.*, b.name as beneficiary_name, b.birth_date
     FROM scfv_enrollments se
     JOIN beneficiaries b ON se.beneficiary_id = b.id
     WHERE 1=1
@@ -1974,7 +1974,7 @@ app.get('/api/creas-cases', authenticateToken, (req, res) => {
 app.get('/api/creas-cases/:id', authenticateToken, (req, res) => {
   const { id } = req.params;
   const sql = `
-    SELECT cc.*, b.name as beneficiary_name, b.cpf, b.birthDate, u.name as responsible_name
+    SELECT cc.*, b.name as beneficiary_name, b.cpf, b.birth_date, u.name as responsible_name
     FROM creas_cases cc
     JOIN beneficiaries b ON cc.beneficiary_id = b.id
     LEFT JOIN users u ON cc.responsible_server_id = u.id
@@ -2118,7 +2118,7 @@ app.get('/api/eventual-benefits', authenticateToken, (req, res) => {
     params.push(status);
   }
 
-  sql += ' ORDER BY eb.request_date DESC';
+  sql += ' ORDER BY eb.requested_at DESC';
 
   db.all(sql, params, (err, rows) => {
     if (err) { res.status(400).json({ "error": err.message }); return; }
@@ -2331,7 +2331,7 @@ app.get('/api/vulnerability-predictions', authenticateToken, (req, res) => {
     params.push(risk_level);
   }
 
-  sql += ' ORDER BY vp.prediction_date DESC';
+  sql += ' ORDER BY vp.created_at DESC';
 
   db.all(sql, params, (err, rows) => {
     if (err) { res.status(400).json({ "error": err.message }); return; }
@@ -2435,22 +2435,21 @@ app.post('/api/ai/predict-vulnerability/:beneficiary_id', authenticateToken, (re
 // === ROTAS IA - INSIGHTS ===
 
 app.get('/api/ai-insights', authenticateToken, (req, res) => {
-  const { acknowledged, severity } = req.query;
+  const { status, priority } = req.query;
   let sql = `
-    SELECT ai.*, u.name as acknowledged_by_name
+    SELECT ai.*
     FROM ai_insights ai
-    LEFT JOIN users u ON ai.acknowledged_by = u.id
     WHERE 1=1
   `;
   const params = [];
 
-  if (acknowledged !== undefined) {
-    sql += ' AND ai.acknowledged = ?';
-    params.push(acknowledged === 'true' ? 1 : 0);
+  if (status) {
+    sql += ' AND ai.status = ?';
+    params.push(status);
   }
-  if (severity) {
-    sql += ' AND ai.severity = ?';
-    params.push(severity);
+  if (priority) {
+    sql += ' AND ai.priority = ?';
+    params.push(priority);
   }
 
   sql += ' ORDER BY ai.created_at DESC LIMIT 50';
@@ -2677,12 +2676,12 @@ app.get('/api/reports/suas', authenticateToken, (req, res) => {
   db.all(`
     SELECT
       (SELECT COUNT(*) FROM beneficiaries) as total_familias,
-      (SELECT COUNT(*) FROM appointments WHERE status = 'Realizado' AND createdAt >= date('now', '-1 month')) as atendimentos_mes,
+      (SELECT COUNT(*) FROM appointments WHERE status = 'Realizado' AND created_at >= date('now', '-1 month')) as atendimentos_mes,
       (SELECT COUNT(*) FROM home_visits WHERE status = 'Realizada' AND visit_date >= date('now', '-1 month')) as visitas_mes,
       (SELECT COUNT(*) FROM paif_activities WHERE status = 'Concluída' AND date >= date('now', '-1 month')) as atividades_paif_mes,
       (SELECT COUNT(DISTINCT beneficiary_id) FROM scfv_enrollments WHERE status = 'Ativo') as total_scfv,
       (SELECT COUNT(*) FROM creas_cases WHERE status IN ('Aberto', 'Em Acompanhamento')) as casos_creas_ativos,
-      (SELECT COUNT(*) FROM eventual_benefits WHERE status = 'Entregue' AND delivery_date >= date('now', '-1 month')) as beneficios_entregues_mes
+      (SELECT COUNT(*) FROM eventual_benefits WHERE status = 'Entregue' AND delivered_at >= date('now', '-1 month')) as beneficios_entregues_mes
   `, [], (err, row) => {
     if (err) { return res.status(400).json({ "error": err.message }); }
     report.dados = row[0];
